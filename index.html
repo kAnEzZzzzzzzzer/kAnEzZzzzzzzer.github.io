@@ -639,7 +639,9 @@ h2 {
    A new session is required every time the page is loaded.
 */
 const PLAYER_PASSWORD_HASH =
-    "0e895c323cc786e17547125a4548680990d22ee9459561804dfc6f413d30618a"; // placeholder replaced below
+    "0e895c323cc786e17547125a4548680990d22ee9459561804dfc6f413d30618a";
+
+const PASSWORD_STORAGE_KEY = "spotify_clone_password_unlocked";
 
 async function hashPassword(value) {
     const data = new TextEncoder().encode(value);
@@ -654,21 +656,31 @@ async function unlockPlayer() {
     const hash = await hashPassword(input);
 
     if (hash === PLAYER_PASSWORD_HASH) {
-        document.body.classList.remove("password-locked");
-        $("passwordGate").style.display = "none";
-        $("playerPassword").value = "";
-        $("passwordError").textContent = "";
-        startApp();
+        localStorage.setItem(PASSWORD_STORAGE_KEY, "true");
+        showPlayer();
     } else {
         $("passwordError").textContent = "Incorrect password.";
         $("playerPassword").select();
     }
 }
 
+function showPlayer() {
+    document.body.classList.remove("password-locked");
+    $("passwordGate").style.display = "none";
+    $("playerPassword").value = "";
+    $("passwordError").textContent = "";
+    startApp();
+}
+
 $("passwordSubmit").addEventListener("click", unlockPlayer);
 $("playerPassword").addEventListener("keydown", event => {
     if (event.key === "Enter") unlockPlayer();
 });
+
+// Remember the unlock between page loads in this browser.
+if (localStorage.getItem(PASSWORD_STORAGE_KEY) === "true") {
+    showPlayer();
+}
 
 
 /* important */
