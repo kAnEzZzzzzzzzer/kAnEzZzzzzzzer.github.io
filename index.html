@@ -98,6 +98,14 @@ button {
     font-size: 16px;
 }
 
+.search-button {
+    background: #1ed760;
+    color: black;
+    padding: 13px 22px;
+    border-radius: 25px;
+    font-weight: bold;
+}
+
 .content {
     padding: 10px 30px;
 }
@@ -153,24 +161,6 @@ h2 {
     text-overflow: ellipsis;
 }
 
-.play-small {
-    background: #1ed760;
-    color: black;
-    width: 42px;
-    height: 42px;
-    border-radius: 50%;
-    font-size: 18px;
-    position: absolute;
-    right: 20px;
-    bottom: 65px;
-    opacity: 0;
-    transition: .2s;
-}
-
-.card:hover .play-small {
-    opacity: 1;
-}
-
 .track {
     display: flex;
     align-items: center;
@@ -197,6 +187,9 @@ h2 {
 
 .track-name {
     font-weight: bold;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .track-artist {
@@ -207,10 +200,12 @@ h2 {
 
 .track-play {
     background: #1ed760;
+    color: black;
     width: 38px;
     height: 38px;
     border-radius: 50%;
     font-size: 16px;
+    flex-shrink: 0;
 }
 
 .hero {
@@ -332,6 +327,11 @@ h2 {
     padding: 30px 0;
 }
 
+.loading {
+    color: #b3b3b3;
+    padding: 20px 0;
+}
+
 @media(max-width: 700px) {
     .sidebar {
         width: 70px;
@@ -371,67 +371,130 @@ h2 {
 <div class="app">
 
     <aside class="sidebar">
-        <div class="logo">♫ Spotify</div>
 
-        <div class="nav">
-            <button onclick="showHome()">Home</button>
-            <button onclick="focusSearch()">Search</button>
-            <button onclick="loadMyPlaylists()">Your Library</button>
+        <div class="logo">
+            ♫ Spotify
         </div>
 
-        <button class="login-button" id="loginButton" onclick="login()">
+        <div class="nav">
+
+            <button onclick="showHome()">
+                Home
+            </button>
+
+            <button onclick="focusSearch()">
+                Search
+            </button>
+
+            <button onclick="loadMyPlaylists()">
+                Your Library
+            </button>
+
+        </div>
+
+        <button
+            class="login-button"
+            id="loginButton"
+            onclick="login()">
             Log in with Spotify
         </button>
+
     </aside>
+
 
     <main class="main">
 
         <div class="topbar">
+
             <div class="search">
+
                 <input
                     id="searchInput"
                     type="text"
                     placeholder="What do you want to play?"
-                    onkeydown="if(event.key === 'Enter') searchSpotify()"
+                    onkeydown="
+                        if(event.key === 'Enter')
+                            searchSpotify()
+                    "
                 >
+
             </div>
 
-            <button class="green-button" onclick="searchSpotify()">
+            <button
+                class="search-button"
+                onclick="searchSpotify()">
                 Search
             </button>
+
         </div>
 
-        <div id="content" class="content">
-            <h1>Welcome</h1>
+
+        <div
+            id="content"
+            class="content">
+
+            <h1>
+                Welcome
+            </h1>
+
             <p class="empty">
                 Log in with Spotify to search and play music.
             </p>
+
         </div>
 
     </main>
+
 </div>
+
 
 <div class="player">
 
     <div class="now-playing">
-        <img id="playerImage" src="" style="display:none">
+
+        <img
+            id="playerImage"
+            src=""
+            style="display:none"
+        >
 
         <div class="now-playing-text">
-            <div id="playerName" class="now-playing-name">
+
+            <div
+                id="playerName"
+                class="now-playing-name">
                 Nothing playing
             </div>
 
-            <div id="playerArtist" class="now-playing-artist">
+            <div
+                id="playerArtist"
+                class="now-playing-artist">
                 Connect Spotify
             </div>
+
         </div>
+
     </div>
 
+
     <div class="controls">
-        <button onclick="previousTrack()">⏮</button>
-        <button class="play" onclick="togglePlay()">▶</button>
-        <button onclick="nextTrack()">⏭</button>
+
+        <button onclick="previousTrack()">
+            ⏮
+        </button>
+
+        <button
+            class="play"
+            onclick="togglePlay()">
+            ▶
+        </button>
+
+        <button onclick="nextTrack()">
+            ⏭
+        </button>
+
     </div>
+
 
     <input
         class="volume"
@@ -445,14 +508,17 @@ h2 {
 
 </div>
 
+
 <script src="https://sdk.scdn.co/spotify-player.js"></script>
 
 <script>
-/* =========================
-   SPOTIFY CONFIG
-========================= */
 
-const CLIENT_ID = "b70e6ed30b444ef3859d594d418c2aa1";
+/* =====================================================
+   SPOTIFY CONFIG
+===================================================== */
+
+const CLIENT_ID =
+    "b70e6ed30b444ef3859d594d418c2aa1";
 
 const REDIRECT_URI =
     "https://kanezzzzzzzzzer.github.io/kAnEzZzzzzzzer.github.io/";
@@ -469,43 +535,70 @@ const SCOPES = [
 ].join(" ");
 
 
-/* =========================
-   GLOBAL VARIABLES
-========================= */
+/* =====================================================
+   VARIABLES
+===================================================== */
 
-let accessToken = localStorage.getItem("spotify_access_token");
-let refreshToken = localStorage.getItem("spotify_refresh_token");
+let accessToken =
+    localStorage.getItem(
+        "spotify_access_token"
+    );
+
+let refreshToken =
+    localStorage.getItem(
+        "spotify_refresh_token"
+    );
+
 let tokenExpiresAt =
-    Number(localStorage.getItem("spotify_token_expires_at")) || 0;
+    Number(
+        localStorage.getItem(
+            "spotify_token_expires_at"
+        )
+    ) || 0;
 
 let player = null;
+
 let deviceId = null;
 
 const trackCache = new Map();
 
 
-/* =========================
+/* =====================================================
    PKCE
-========================= */
+===================================================== */
 
 function randomString(length = 64) {
+
     const chars =
         "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~";
 
     let result = "";
 
-    const values = new Uint8Array(length);
+    const values =
+        new Uint8Array(length);
+
     crypto.getRandomValues(values);
 
-    for (let i = 0; i < length; i++) {
-        result += chars[values[i] % chars.length];
+    for (
+        let i = 0;
+        i < length;
+        i++
+    ) {
+
+        result +=
+            chars[
+                values[i] % chars.length
+            ];
     }
 
     return result;
 }
 
+
 async function sha256(plain) {
-    const encoder = new TextEncoder();
+
+    const encoder =
+        new TextEncoder();
 
     return crypto.subtle.digest(
         "SHA-256",
@@ -513,29 +606,36 @@ async function sha256(plain) {
     );
 }
 
+
 function base64url(buffer) {
+
     return btoa(
-        String.fromCharCode(...new Uint8Array(buffer))
+        String.fromCharCode(
+            ...new Uint8Array(buffer)
+        )
     )
-        .replace(/\+/g, "-")
-        .replace(/\//g, "_")
-        .replace(/=+$/, "");
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
+    .replace(/=+$/, "");
 }
 
 
-/* =========================
+/* =====================================================
    LOGIN
-========================= */
+===================================================== */
 
 async function login() {
 
-    const verifier = randomString(128);
+    const verifier =
+        randomString(128);
 
-    const challenge = base64url(
-        await sha256(verifier)
-    );
+    const challenge =
+        base64url(
+            await sha256(verifier)
+        );
 
-    const state = randomString(32);
+    const state =
+        randomString(32);
 
     localStorage.setItem(
         "spotify_code_verifier",
@@ -547,15 +647,16 @@ async function login() {
         state
     );
 
-    const params = new URLSearchParams({
-        client_id: CLIENT_ID,
-        response_type: "code",
-        redirect_uri: REDIRECT_URI,
-        code_challenge_method: "S256",
-        code_challenge: challenge,
-        state: state,
-        scope: SCOPES
-    });
+    const params =
+        new URLSearchParams({
+            client_id: CLIENT_ID,
+            response_type: "code",
+            redirect_uri: REDIRECT_URI,
+            code_challenge_method: "S256",
+            code_challenge: challenge,
+            state: state,
+            scope: SCOPES
+        });
 
     window.location.href =
         "https://accounts.spotify.com/authorize?" +
@@ -563,66 +664,98 @@ async function login() {
 }
 
 
-/* =========================
+/* =====================================================
    CALLBACK
-========================= */
+===================================================== */
 
 async function handleCallback() {
 
-    const params = new URLSearchParams(
-        window.location.search
-    );
+    const params =
+        new URLSearchParams(
+            window.location.search
+        );
 
-    const code = params.get("code");
-    const returnedState = params.get("state");
-    const error = params.get("error");
+    const code =
+        params.get("code");
+
+    const returnedState =
+        params.get("state");
+
+    const error =
+        params.get("error");
 
     if (error) {
+
         showError(
-            "Spotify login failed: " + error
+            "Spotify login failed: " +
+            error
         );
+
         return;
     }
 
     if (!code) return;
 
     const savedState =
-        localStorage.getItem("spotify_state");
+        localStorage.getItem(
+            "spotify_state"
+        );
 
-    if (returnedState !== savedState) {
-        showError("Spotify security check failed.");
+    if (
+        returnedState !==
+        savedState
+    ) {
+
+        showError(
+            "Spotify security check failed."
+        );
+
         return;
     }
 
     const verifier =
-        localStorage.getItem("spotify_code_verifier");
+        localStorage.getItem(
+            "spotify_code_verifier"
+        );
 
     try {
 
-        const response = await fetch(
-            "https://accounts.spotify.com/api/token",
-            {
-                method: "POST",
-                headers: {
-                    "Content-Type":
-                        "application/x-www-form-urlencoded"
-                },
-                body: new URLSearchParams({
-                    client_id: CLIENT_ID,
-                    grant_type:
-                        "authorization_code",
-                    code: code,
-                    redirect_uri:
-                        REDIRECT_URI,
-                    code_verifier:
-                        verifier
-                })
-            }
-        );
+        const response =
+            await fetch(
+                "https://accounts.spotify.com/api/token",
+                {
+                    method: "POST",
 
-        const data = await response.json();
+                    headers: {
+                        "Content-Type":
+                            "application/x-www-form-urlencoded"
+                    },
+
+                    body:
+                        new URLSearchParams({
+                            client_id:
+                                CLIENT_ID,
+
+                            grant_type:
+                                "authorization_code",
+
+                            code:
+                                code,
+
+                            redirect_uri:
+                                REDIRECT_URI,
+
+                            code_verifier:
+                                verifier
+                        })
+                }
+            );
+
+        const data =
+            await response.json();
 
         if (!response.ok) {
+
             throw new Error(
                 data.error_description ||
                 data.error ||
@@ -632,8 +765,13 @@ async function handleCallback() {
 
         saveTokens(data);
 
-        localStorage.removeItem("spotify_state");
-        localStorage.removeItem("spotify_code_verifier");
+        localStorage.removeItem(
+            "spotify_state"
+        );
+
+        localStorage.removeItem(
+            "spotify_code_verifier"
+        );
 
         window.history.replaceState(
             {},
@@ -646,19 +784,21 @@ async function handleCallback() {
     } catch (error) {
 
         showError(
-            "Login error: " + error.message
+            "Login error: " +
+            error.message
         );
     }
 }
 
 
-/* =========================
+/* =====================================================
    TOKEN MANAGEMENT
-========================= */
+===================================================== */
 
 function saveTokens(data) {
 
-    accessToken = data.access_token;
+    accessToken =
+        data.access_token;
 
     localStorage.setItem(
         "spotify_access_token",
@@ -667,7 +807,8 @@ function saveTokens(data) {
 
     if (data.refresh_token) {
 
-        refreshToken = data.refresh_token;
+        refreshToken =
+            data.refresh_token;
 
         localStorage.setItem(
             "spotify_refresh_token",
@@ -677,7 +818,10 @@ function saveTokens(data) {
 
     tokenExpiresAt =
         Date.now() +
-        ((data.expires_in || 3600) * 1000);
+        (
+            (data.expires_in || 3600)
+            * 1000
+        );
 
     localStorage.setItem(
         "spotify_token_expires_at",
@@ -689,30 +833,42 @@ function saveTokens(data) {
 async function refreshAccessToken() {
 
     if (!refreshToken) {
-        throw new Error("No refresh token.");
+
+        throw new Error(
+            "No refresh token."
+        );
     }
 
-    const response = await fetch(
-        "https://accounts.spotify.com/api/token",
-        {
-            method: "POST",
-            headers: {
-                "Content-Type":
-                    "application/x-www-form-urlencoded"
-            },
-            body: new URLSearchParams({
-                client_id: CLIENT_ID,
-                grant_type:
-                    "refresh_token",
-                refresh_token:
-                    refreshToken
-            })
-        }
-    );
+    const response =
+        await fetch(
+            "https://accounts.spotify.com/api/token",
+            {
+                method: "POST",
 
-    const data = await response.json();
+                headers: {
+                    "Content-Type":
+                        "application/x-www-form-urlencoded"
+                },
+
+                body:
+                    new URLSearchParams({
+                        client_id:
+                            CLIENT_ID,
+
+                        grant_type:
+                            "refresh_token",
+
+                        refresh_token:
+                            refreshToken
+                    })
+            }
+        );
+
+    const data =
+        await response.json();
 
     if (!response.ok) {
+
         throw new Error(
             data.error_description ||
             "Token refresh failed."
@@ -728,13 +884,18 @@ async function refreshAccessToken() {
 async function getValidToken() {
 
     if (!accessToken) {
-        throw new Error("Not logged in.");
+
+        throw new Error(
+            "Not logged in."
+        );
     }
 
     if (
         tokenExpiresAt &&
-        Date.now() > tokenExpiresAt - 60000
+        Date.now() >
+        tokenExpiresAt - 60000
     ) {
+
         await refreshAccessToken();
     }
 
@@ -742,9 +903,9 @@ async function getValidToken() {
 }
 
 
-/* =========================
+/* =====================================================
    SPOTIFY API
-========================= */
+===================================================== */
 
 async function spotifyAPI(
     endpoint,
@@ -752,23 +913,28 @@ async function spotifyAPI(
     retry = true
 ) {
 
-    const token = await getValidToken();
+    const token =
+        await getValidToken();
 
-    const response = await fetch(
-        "https://api.spotify.com/v1" + endpoint,
-        {
-            ...options,
-            headers: {
-                Authorization:
-                    "Bearer " + token,
+    const response =
+        await fetch(
+            "https://api.spotify.com/v1" +
+            endpoint,
+            {
+                ...options,
 
-                "Content-Type":
-                    "application/json",
+                headers: {
+                    Authorization:
+                        "Bearer " + token,
 
-                ...(options.headers || {})
+                    "Content-Type":
+                        "application/json",
+
+                    ...(options.headers || {})
+                }
             }
-        }
-    );
+        );
+
 
     if (
         response.status === 401 &&
@@ -785,6 +951,7 @@ async function spotifyAPI(
         );
     }
 
+
     if (!response.ok) {
 
         let message =
@@ -796,7 +963,10 @@ async function spotifyAPI(
             const error =
                 await response.json();
 
-            if (error.error?.message) {
+            if (
+                error.error?.message
+            ) {
+
                 message =
                     error.error.message;
             }
@@ -806,7 +976,9 @@ async function spotifyAPI(
         throw new Error(message);
     }
 
+
     if (response.status === 204) {
+
         return null;
     }
 
@@ -814,14 +986,15 @@ async function spotifyAPI(
 }
 
 
-/* =========================
-   PLAYER
-========================= */
+/* =====================================================
+   WEB PLAYBACK SDK
+===================================================== */
 
 window.onSpotifyWebPlaybackSDKReady =
     function () {
 
         if (accessToken) {
+
             initializePlayer();
         }
     };
@@ -833,34 +1006,41 @@ async function initializePlayer() {
 
     if (player) return;
 
-    player = new Spotify.Player({
 
-        name: "My Spotify Clone",
+    player =
+        new Spotify.Player({
 
-        getOAuthToken: async callback => {
+            name:
+                "My Spotify Clone",
 
-            try {
+            getOAuthToken:
+                async callback => {
 
-                const token =
-                    await getValidToken();
+                    try {
 
-                callback(token);
+                        const token =
+                            await getValidToken();
 
-            } catch {
+                        callback(token);
 
-                callback(accessToken);
-            }
-        },
+                    } catch {
 
-        volume: 0.7
-    });
+                        callback(
+                            accessToken
+                        );
+                    }
+                },
+
+            volume: 0.7
+        });
 
 
     player.addListener(
         "ready",
         async ({ device_id }) => {
 
-            deviceId = device_id;
+            deviceId =
+                device_id;
 
             console.log(
                 "Spotify device ready:",
@@ -873,10 +1053,15 @@ async function initializePlayer() {
                     "/me/player",
                     {
                         method: "PUT",
-                        body: JSON.stringify({
-                            device_ids: [deviceId],
-                            play: false
-                        })
+
+                        body:
+                            JSON.stringify({
+                                device_ids:
+                                    [deviceId],
+
+                                play:
+                                    false
+                            })
                     }
                 );
 
@@ -954,13 +1139,14 @@ async function initializePlayer() {
 }
 
 
-/* =========================
-   PLAY TRACK
-========================= */
+/* =====================================================
+   PLAY SONG
+===================================================== */
 
 async function playTrack(track) {
 
     if (!track) return;
+
 
     if (!deviceId) {
 
@@ -971,16 +1157,21 @@ async function playTrack(track) {
         return;
     }
 
+
     try {
 
         await spotifyAPI(
             "/me/player/play?device_id=" +
             encodeURIComponent(deviceId),
+
             {
                 method: "PUT",
-                body: JSON.stringify({
-                    uris: [track.uri]
-                })
+
+                body:
+                    JSON.stringify({
+                        uris:
+                            [track.uri]
+                    })
             }
         );
 
@@ -990,8 +1181,7 @@ async function playTrack(track) {
 
         showError(
             "Could not play song: " +
-            error.message +
-            ". If you just updated the site, log out and log back in."
+            error.message
         );
     }
 }
@@ -999,12 +1189,16 @@ async function playTrack(track) {
 
 async function playTrackById(id) {
 
-    const track = trackCache.get(id);
+    const cached =
+        trackCache.get(id);
 
-    if (track) {
-        await playTrack(track);
+    if (cached) {
+
+        await playTrack(cached);
+
         return;
     }
+
 
     try {
 
@@ -1031,9 +1225,9 @@ async function playTrackById(id) {
 }
 
 
-/* =========================
+/* =====================================================
    PLAY PLAYLIST
-========================= */
+===================================================== */
 
 async function playPlaylist(id) {
 
@@ -1046,17 +1240,22 @@ async function playPlaylist(id) {
         return;
     }
 
+
     try {
 
         await spotifyAPI(
             "/me/player/play?device_id=" +
             encodeURIComponent(deviceId),
+
             {
                 method: "PUT",
-                body: JSON.stringify({
-                    context_uri:
-                        "spotify:playlist:" + id
-                })
+
+                body:
+                    JSON.stringify({
+                        context_uri:
+                            "spotify:playlist:" +
+                            id
+                    })
             }
         );
 
@@ -1064,35 +1263,43 @@ async function playPlaylist(id) {
 
         showError(
             "Could not play playlist: " +
-            error.message +
-            ". Try logging out and back in."
+            error.message
         );
     }
 }
 
 
-/* =========================
+/* =====================================================
    PLAY ALBUM
-========================= */
+===================================================== */
 
 async function playAlbum(id) {
 
     if (!deviceId) {
-        showError("Spotify player is not ready yet.");
+
+        showError(
+            "Spotify player is not ready yet."
+        );
+
         return;
     }
+
 
     try {
 
         await spotifyAPI(
             "/me/player/play?device_id=" +
             encodeURIComponent(deviceId),
+
             {
                 method: "PUT",
-                body: JSON.stringify({
-                    context_uri:
-                        "spotify:album:" + id
-                })
+
+                body:
+                    JSON.stringify({
+                        context_uri:
+                            "spotify:album:" +
+                            id
+                    })
             }
         );
 
@@ -1106,9 +1313,9 @@ async function playAlbum(id) {
 }
 
 
-/* =========================
+/* =====================================================
    PLAYER CONTROLS
-========================= */
+===================================================== */
 
 async function togglePlay() {
 
@@ -1121,13 +1328,16 @@ async function togglePlay() {
 async function nextTrack() {
 
     try {
+
         await spotifyAPI(
             "/me/player/next",
             {
                 method: "POST"
             }
         );
+
     } catch (error) {
+
         console.error(error);
     }
 }
@@ -1136,13 +1346,16 @@ async function nextTrack() {
 async function previousTrack() {
 
     try {
+
         await spotifyAPI(
             "/me/player/previous",
             {
                 method: "POST"
             }
         );
+
     } catch (error) {
+
         console.error(error);
     }
 }
@@ -1151,6 +1364,7 @@ async function previousTrack() {
 function setVolume(value) {
 
     if (player) {
+
         player.setVolume(
             Number(value)
         );
@@ -1158,17 +1372,20 @@ function setVolume(value) {
 }
 
 
-/* =========================
+/* =====================================================
    PLAYER UI
-========================= */
+===================================================== */
 
 function updateNowPlaying(track) {
 
     if (!track) return;
 
+
     document.getElementById(
         "playerName"
-    ).textContent = track.name;
+    ).textContent =
+        track.name;
+
 
     document.getElementById(
         "playerArtist"
@@ -1177,17 +1394,25 @@ function updateNowPlaying(track) {
             ?.map(a => a.name)
             .join(", ") || "";
 
+
     const image =
-        track.album?.images?.[0]?.url;
+        track.album
+            ?.images
+            ?. [0]
+            ?.url;
+
 
     const imageElement =
         document.getElementById(
             "playerImage"
         );
 
+
     if (image) {
 
-        imageElement.src = image;
+        imageElement.src =
+            image;
+
         imageElement.style.display =
             "block";
     }
@@ -1198,29 +1423,39 @@ function updatePlayerUI(state) {
 
     if (!state) return;
 
+
     const track =
-        state.track_window.current_track;
+        state.track_window
+            .current_track;
+
 
     if (track) {
-        updateNowPlaying(track);
+
+        updateNowPlaying(
+            track
+        );
     }
+
 
     const playButton =
         document.querySelector(
             ".controls .play"
         );
 
+
     if (playButton) {
 
         playButton.textContent =
-            state.paused ? "▶" : "Ⅱ";
+            state.paused
+                ? "▶"
+                : "Ⅱ";
     }
 }
 
 
-/* =========================
+/* =====================================================
    SEARCH
-========================= */
+===================================================== */
 
 async function searchSpotify() {
 
@@ -1232,32 +1467,55 @@ async function searchSpotify() {
     const query =
         input.value.trim();
 
+
     if (!query) return;
+
 
     const content =
         document.getElementById(
             "content"
         );
 
+
     content.innerHTML =
-        "<h1>Searching...</h1>";
+        `
+            <h1>Searching...</h1>
+            <div class="loading">
+                Searching Spotify for "${escapeHTML(query)}"...
+            </div>
+        `;
+
 
     try {
 
+        /*
+         * IMPORTANT:
+         * Spotify's current Search API has a
+         * maximum limit of 10.
+         */
+
         const params =
             new URLSearchParams({
-                q: query,
+                q:
+                    query,
+
                 type:
                     "track,artist,album,playlist",
-                limit: "20",
-                market: "US"
+
+                limit:
+                    "10",
+
+                market:
+                    "US"
             });
+
 
         const data =
             await spotifyAPI(
                 "/search?" +
                 params.toString()
             );
+
 
         renderSearch(data);
 
@@ -1271,6 +1529,10 @@ async function searchSpotify() {
 }
 
 
+/* =====================================================
+   SEARCH RESULTS
+===================================================== */
+
 function renderSearch(data) {
 
     const content =
@@ -1280,33 +1542,50 @@ function renderSearch(data) {
 
     let html = "";
 
+
     /* SONGS */
 
-    html += "<h1>Songs</h1>";
+    html +=
+        "<h1>Songs</h1>";
+
 
     if (
         data.tracks &&
+        data.tracks.items &&
         data.tracks.items.length
     ) {
 
-        html += '<div class="track-list">';
+        html +=
+            '<div class="track-list">';
 
-        data.tracks.items.forEach(track => {
 
-            trackCache.set(
-                track.id,
-                track
-            );
+        data.tracks.items.forEach(
+            track => {
 
-            html += trackRowHTML(track);
-        });
+                trackCache.set(
+                    track.id,
+                    track
+                );
 
-        html += "</div>";
+                html +=
+                    trackRowHTML(
+                        track
+                    );
+            }
+        );
+
+
+        html +=
+            "</div>";
 
     } else {
 
         html +=
-            '<div class="empty">No songs found.</div>';
+            `
+                <div class="empty">
+                    No songs found.
+                </div>
+            `;
     }
 
 
@@ -1314,42 +1593,64 @@ function renderSearch(data) {
 
     if (
         data.artists &&
+        data.artists.items &&
         data.artists.items.length
     ) {
 
-        html += "<h2>Artists</h2>";
-        html += '<div class="grid">';
+        html +=
+            "<h2>Artists</h2>";
+
+        html +=
+            '<div class="grid">';
+
 
         data.artists.items
-            .slice(0, 8)
-            .forEach(artist => {
+            .slice(0, 10)
+            .forEach(
+                artist => {
 
-                const image =
-                    artist.images?.[0]?.url ||
-                    "";
+                    const image =
+                        artist.images
+                            ?. [0]
+                            ?.url ||
+                        "";
 
-                html += `
-                    <div class="card"
-                         onclick="openArtist('${artist.id}')">
 
-                        ${
-                            image
-                            ? `<img src="${image}">`
-                            : ""
-                        }
+                    html += `
+                        <div
+                            class="card"
+                            onclick="openArtist('${artist.id}')"
+                        >
 
-                        <div class="card-title">
-                            ${escapeHTML(artist.name)}
+                            ${
+                                image
+                                ? `
+                                    <img
+                                        src="${image}"
+                                        alt=""
+                                    >
+                                  `
+                                : ""
+                            }
+
+                            <div class="card-title">
+                                ${escapeHTML(
+                                    artist.name
+                                )}
+                            </div>
+
+                            <div class="card-subtitle">
+                                Artist
+                            </div>
+
                         </div>
+                    `;
+                }
+            );
 
-                        <div class="card-subtitle">
-                            Artist
-                        </div>
-                    </div>
-                `;
-            });
 
-        html += "</div>";
+        html +=
+            "</div>";
     }
 
 
@@ -1357,46 +1658,71 @@ function renderSearch(data) {
 
     if (
         data.albums &&
+        data.albums.items &&
         data.albums.items.length
     ) {
 
-        html += "<h2>Albums</h2>";
-        html += '<div class="grid">';
+        html +=
+            "<h2>Albums</h2>";
+
+        html +=
+            '<div class="grid">';
+
 
         data.albums.items
-            .slice(0, 8)
-            .forEach(album => {
+            .slice(0, 10)
+            .forEach(
+                album => {
 
-                const image =
-                    album.images?.[0]?.url ||
-                    "";
+                    const image =
+                        album.images
+                            ?. [0]
+                            ?.url ||
+                        "";
 
-                html += `
-                    <div class="card"
-                         onclick="openAlbum('${album.id}')">
 
-                        ${
-                            image
-                            ? `<img src="${image}">`
-                            : ""
-                        }
+                    html += `
+                        <div
+                            class="card"
+                            onclick="openAlbum('${album.id}')"
+                        >
 
-                        <div class="card-title">
-                            ${escapeHTML(album.name)}
+                            ${
+                                image
+                                ? `
+                                    <img
+                                        src="${image}"
+                                        alt=""
+                                    >
+                                  `
+                                : ""
+                            }
+
+                            <div class="card-title">
+                                ${escapeHTML(
+                                    album.name
+                                )}
+                            </div>
+
+                            <div class="card-subtitle">
+                                ${escapeHTML(
+                                    album.artists
+                                        .map(
+                                            a =>
+                                                a.name
+                                        )
+                                        .join(", ")
+                                )}
+                            </div>
+
                         </div>
+                    `;
+                }
+            );
 
-                        <div class="card-subtitle">
-                            ${escapeHTML(
-                                album.artists
-                                    .map(a => a.name)
-                                    .join(", ")
-                            )}
-                        </div>
-                    </div>
-                `;
-            });
 
-        html += "</div>";
+        html +=
+            "</div>";
     }
 
 
@@ -1404,89 +1730,132 @@ function renderSearch(data) {
 
     if (
         data.playlists &&
+        data.playlists.items &&
         data.playlists.items.length
     ) {
 
-        html += "<h2>Playlists</h2>";
-        html += '<div class="grid">';
+        html +=
+            "<h2>Playlists</h2>";
+
+        html +=
+            '<div class="grid">';
+
 
         data.playlists.items
-            .slice(0, 8)
-            .forEach(playlist => {
+            .slice(0, 10)
+            .forEach(
+                playlist => {
 
-                if (!playlist) return;
+                    if (!playlist) return;
 
-                const image =
-                    playlist.images?.[0]?.url ||
-                    "";
 
-                html += `
-                    <div class="card"
-                         onclick="openPlaylist('${playlist.id}')">
+                    const image =
+                        playlist.images
+                            ?. [0]
+                            ?.url ||
+                        "";
 
-                        ${
-                            image
-                            ? `<img src="${image}">`
-                            : ""
-                        }
 
-                        <div class="card-title">
-                            ${escapeHTML(playlist.name)}
+                    html += `
+                        <div
+                            class="card"
+                            onclick="openPlaylist('${playlist.id}')"
+                        >
+
+                            ${
+                                image
+                                ? `
+                                    <img
+                                        src="${image}"
+                                        alt=""
+                                    >
+                                  `
+                                : ""
+                            }
+
+                            <div class="card-title">
+                                ${escapeHTML(
+                                    playlist.name
+                                )}
+                            </div>
+
+                            <div class="card-subtitle">
+                                Playlist
+                            </div>
+
                         </div>
+                    `;
+                }
+            );
 
-                        <div class="card-subtitle">
-                            Playlist
-                        </div>
-                    </div>
-                `;
-            });
 
-        html += "</div>";
+        html +=
+            "</div>";
     }
 
 
-    content.innerHTML = html;
+    content.innerHTML =
+        html;
 }
 
 
-/* =========================
+/* =====================================================
    TRACK ROW
-========================= */
+===================================================== */
 
 function trackRowHTML(track) {
 
     const image =
-        track.album?.images?.[0]?.url ||
+        track.album
+            ?.images
+            ?. [0]
+            ?.url ||
         "";
+
 
     return `
         <div class="track">
 
             ${
                 image
-                ? `<img src="${image}">`
+                ? `
+                    <img
+                        src="${image}"
+                        alt=""
+                    >
+                  `
                 : ""
             }
+
 
             <div class="track-info">
 
                 <div class="track-name">
-                    ${escapeHTML(track.name)}
+                    ${escapeHTML(
+                        track.name
+                    )}
                 </div>
 
                 <div class="track-artist">
                     ${escapeHTML(
                         track.artists
-                            ?.map(a => a.name)
-                            .join(", ") || ""
+                            ?.map(
+                                a =>
+                                    a.name
+                            )
+                            .join(", ") ||
+                        ""
                     )}
                 </div>
 
             </div>
 
+
             <button
                 class="track-play"
-                onclick="playTrackById('${track.id}')">
+                onclick="playTrackById('${track.id}')"
+                title="Play"
+            >
                 ▶
             </button>
 
@@ -1495,9 +1864,9 @@ function trackRowHTML(track) {
 }
 
 
-/* =========================
+/* =====================================================
    PLAYLIST PAGE
-========================= */
+===================================================== */
 
 async function openPlaylist(id) {
 
@@ -1506,8 +1875,12 @@ async function openPlaylist(id) {
             "content"
         );
 
+
     content.innerHTML =
-        "<h1>Loading playlist...</h1>";
+        `
+            <h1>Loading playlist...</h1>
+        `;
+
 
     try {
 
@@ -1518,18 +1891,30 @@ async function openPlaylist(id) {
                 "?market=US"
             );
 
+
         let html = `
+
             <div class="hero">
 
                 ${
-                    playlist.images?.[0]?.url
-                    ? `<img src="${playlist.images[0].url}">`
+                    playlist.images
+                        ?. [0]
+                        ?.url
+                    ? `
+                        <img
+                            src="${playlist.images[0].url}"
+                            alt=""
+                        >
+                      `
                     : ""
                 }
 
+
                 <div class="hero-info">
 
-                    <p>PLAYLIST</p>
+                    <p>
+                        PLAYLIST
+                    </p>
 
                     <h1>
                         ${escapeHTML(
@@ -1549,48 +1934,71 @@ async function openPlaylist(id) {
                         }
                     </p>
 
+
                     <button
                         class="green-button"
-                        onclick="playPlaylist('${playlist.id}')">
+                        onclick="playPlaylist('${playlist.id}')"
+                    >
                         ▶ Play Playlist
                     </button>
 
                 </div>
+
             </div>
+
 
             <div style="padding:20px">
         `;
 
+
         const tracks =
-            playlist.tracks?.items || [];
+            playlist.tracks
+                ?.items ||
+            [];
+
 
         if (!tracks.length) {
 
             html +=
-                '<div class="empty">This playlist has no playable songs.</div>';
+                `
+                    <div class="empty">
+                        This playlist has no playable songs.
+                    </div>
+                `;
 
         } else {
 
-            tracks.forEach(item => {
+            tracks.forEach(
+                item => {
 
-                const track =
-                    item.track;
+                    const track =
+                        item.track;
 
-                if (!track) return;
 
-                trackCache.set(
-                    track.id,
-                    track
-                );
+                    if (!track) return;
 
-                html +=
-                    trackRowHTML(track);
-            });
+
+                    trackCache.set(
+                        track.id,
+                        track
+                    );
+
+
+                    html +=
+                        trackRowHTML(
+                            track
+                        );
+                }
+            );
         }
 
-        html += "</div>";
 
-        content.innerHTML = html;
+        html +=
+            "</div>";
+
+
+        content.innerHTML =
+            html;
 
     } catch (error) {
 
@@ -1602,9 +2010,9 @@ async function openPlaylist(id) {
 }
 
 
-/* =========================
-   ALBUM
-========================= */
+/* =====================================================
+   ALBUM PAGE
+===================================================== */
 
 async function openAlbum(id) {
 
@@ -1613,8 +2021,12 @@ async function openAlbum(id) {
             "content"
         );
 
+
     content.innerHTML =
-        "<h1>Loading album...</h1>";
+        `
+            <h1>Loading album...</h1>
+        `;
+
 
     try {
 
@@ -1625,57 +2037,88 @@ async function openAlbum(id) {
                 "?market=US"
             );
 
+
         let html = `
+
             <div class="hero">
 
                 ${
-                    album.images?.[0]?.url
-                    ? `<img src="${album.images[0].url}">`
+                    album.images
+                        ?. [0]
+                        ?.url
+                    ? `
+                        <img
+                            src="${album.images[0].url}"
+                            alt=""
+                        >
+                      `
                     : ""
                 }
 
+
                 <div class="hero-info">
 
-                    <p>ALBUM</p>
+                    <p>
+                        ALBUM
+                    </p>
 
                     <h1>
-                        ${escapeHTML(album.name)}
+                        ${escapeHTML(
+                            album.name
+                        )}
                     </h1>
 
                     <p>
                         ${escapeHTML(
                             album.artists
-                                .map(a => a.name)
+                                .map(
+                                    a =>
+                                        a.name
+                                )
                                 .join(", ")
                         )}
                     </p>
 
+
                     <button
                         class="green-button"
-                        onclick="playAlbum('${album.id}')">
+                        onclick="playAlbum('${album.id}')"
+                    >
                         ▶ Play Album
                     </button>
 
                 </div>
+
             </div>
+
 
             <div style="padding:20px">
         `;
 
-        album.tracks.items.forEach(track => {
 
-            trackCache.set(
-                track.id,
-                track
-            );
+        album.tracks.items.forEach(
+            track => {
 
-            html +=
-                trackRowHTML(track);
-        });
+                trackCache.set(
+                    track.id,
+                    track
+                );
 
-        html += "</div>";
 
-        content.innerHTML = html;
+                html +=
+                    trackRowHTML(
+                        track
+                    );
+            }
+        );
+
+
+        html +=
+            "</div>";
+
+
+        content.innerHTML =
+            html;
 
     } catch (error) {
 
@@ -1687,9 +2130,9 @@ async function openAlbum(id) {
 }
 
 
-/* =========================
-   ARTIST
-========================= */
+/* =====================================================
+   ARTIST PAGE
+===================================================== */
 
 async function openArtist(id) {
 
@@ -1701,6 +2144,7 @@ async function openArtist(id) {
                 encodeURIComponent(id)
             );
 
+
         const topTracks =
             await spotifyAPI(
                 "/artists/" +
@@ -1708,22 +2152,35 @@ async function openArtist(id) {
                 "/top-tracks?market=US"
             );
 
+
         const image =
-            artist.images?.[0]?.url ||
+            artist.images
+                ?. [0]
+                ?.url ||
             "";
 
+
         let html = `
+
             <div class="hero">
 
                 ${
                     image
-                    ? `<img src="${image}">`
+                    ? `
+                        <img
+                            src="${image}"
+                            alt=""
+                        >
+                      `
                     : ""
                 }
 
+
                 <div class="hero-info">
 
-                    <p>ARTIST</p>
+                    <p>
+                        ARTIST
+                    </p>
 
                     <h1>
                         ${escapeHTML(
@@ -1732,29 +2189,43 @@ async function openArtist(id) {
                     </h1>
 
                 </div>
+
             </div>
+
 
             <div style="padding:20px">
 
-                <h2>Popular</h2>
+                <h2>
+                    Popular
+                </h2>
         `;
 
-        topTracks.tracks.forEach(track => {
 
-            trackCache.set(
-                track.id,
-                track
-            );
+        topTracks.tracks.forEach(
+            track => {
 
-            html +=
-                trackRowHTML(track);
-        });
+                trackCache.set(
+                    track.id,
+                    track
+                );
 
-        html += "</div>";
+
+                html +=
+                    trackRowHTML(
+                        track
+                    );
+            }
+        );
+
+
+        html +=
+            "</div>";
+
 
         document.getElementById(
             "content"
-        ).innerHTML = html;
+        ).innerHTML =
+            html;
 
     } catch (error) {
 
@@ -1766,9 +2237,9 @@ async function openArtist(id) {
 }
 
 
-/* =========================
+/* =====================================================
    YOUR PLAYLISTS
-========================= */
+===================================================== */
 
 async function loadMyPlaylists() {
 
@@ -1777,8 +2248,14 @@ async function loadMyPlaylists() {
             "content"
         );
 
+
     content.innerHTML =
-        "<h1>Loading your playlists...</h1>";
+        `
+            <h1>
+                Loading your playlists...
+            </h1>
+        `;
+
 
     try {
 
@@ -1787,55 +2264,84 @@ async function loadMyPlaylists() {
                 "/me/playlists?limit=50"
             );
 
+
         let html =
             "<h1>Your Playlists</h1>";
 
-        if (!data.items.length) {
+
+        if (
+            !data.items ||
+            !data.items.length
+        ) {
 
             html +=
-                '<div class="empty">You do not have any playlists.</div>';
+                `
+                    <div class="empty">
+                        You do not have any playlists.
+                    </div>
+                `;
 
         } else {
 
             html +=
                 '<div class="grid">';
 
-            data.items.forEach(playlist => {
 
-                if (!playlist) return;
+            data.items.forEach(
+                playlist => {
 
-                const image =
-                    playlist.images?.[0]?.url ||
-                    "";
+                    if (!playlist) return;
 
-                html += `
-                    <div class="card"
-                         onclick="openPlaylist('${playlist.id}')">
 
-                        ${
-                            image
-                            ? `<img src="${image}">`
-                            : ""
-                        }
+                    const image =
+                        playlist.images
+                            ?. [0]
+                            ?.url ||
+                        "";
 
-                        <div class="card-title">
-                            ${escapeHTML(
-                                playlist.name
-                            )}
+
+                    html += `
+                        <div
+                            class="card"
+                            onclick="openPlaylist('${playlist.id}')"
+                        >
+
+                            ${
+                                image
+                                ? `
+                                    <img
+                                        src="${image}"
+                                        alt=""
+                                    >
+                                  `
+                                : ""
+                            }
+
+
+                            <div class="card-title">
+                                ${escapeHTML(
+                                    playlist.name
+                                )}
+                            </div>
+
+
+                            <div class="card-subtitle">
+                                Playlist
+                            </div>
+
                         </div>
+                    `;
+                }
+            );
 
-                        <div class="card-subtitle">
-                            Playlist
-                        </div>
 
-                    </div>
-                `;
-            });
-
-            html += "</div>";
+            html +=
+                "</div>";
         }
 
-        content.innerHTML = html;
+
+        content.innerHTML =
+            html;
 
     } catch (error) {
 
@@ -1847,22 +2353,27 @@ async function loadMyPlaylists() {
 }
 
 
-/* =========================
+/* =====================================================
    HOME
-========================= */
+===================================================== */
 
 function showHome() {
 
     document.getElementById(
         "content"
     ).innerHTML = `
-        <h1>Home</h1>
+
+        <h1>
+            Home
+        </h1>
 
         <div class="status">
             Search for songs, artists, albums, or playlists above.
         </div>
 
-        <h2>Spotify Clone</h2>
+        <h2>
+            Spotify Clone
+        </h2>
 
         <p class="empty">
             Your Spotify music library can be searched and played here.
@@ -1879,9 +2390,9 @@ function focusSearch() {
 }
 
 
-/* =========================
+/* =====================================================
    LOGOUT
-========================= */
+===================================================== */
 
 function logout() {
 
@@ -1905,15 +2416,21 @@ function logout() {
         "spotify_state"
     );
 
+
     accessToken = null;
+
     refreshToken = null;
+
     tokenExpiresAt = 0;
+
 
     if (player) {
 
         player.disconnect();
+
         player = null;
     }
+
 
     deviceId = null;
 
@@ -1921,29 +2438,50 @@ function logout() {
 }
 
 
-/* =========================
+/* =====================================================
    HELPERS
-========================= */
+===================================================== */
 
 function escapeHTML(text) {
 
     return String(text ?? "")
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#039;");
+        .replace(
+            /&/g,
+            "&amp;"
+        )
+        .replace(
+            /</g,
+            "&lt;"
+        )
+        .replace(
+            />/g,
+            "&gt;"
+        )
+        .replace(
+            /"/g,
+            "&quot;"
+        )
+        .replace(
+            /'/g,
+            "&#039;"
+        );
 }
 
 
 function stripHTML(text) {
 
     const div =
-        document.createElement("div");
+        document.createElement(
+            "div"
+        );
 
-    div.innerHTML = text;
+    div.innerHTML =
+        text;
 
-    return div.textContent || "";
+    return (
+        div.textContent ||
+        ""
+    );
 }
 
 
@@ -1951,48 +2489,63 @@ function showError(message) {
 
     console.error(message);
 
+
     document.getElementById(
         "content"
     ).innerHTML = `
+
         <div class="status error">
             ${escapeHTML(message)}
         </div>
 
+
         <button
             class="green-button"
-            onclick="showHome()">
+            onclick="showHome()"
+        >
             Go Home
         </button>
+
     `;
 }
 
 
-/* =========================
+/* =====================================================
    STARTUP
-========================= */
+===================================================== */
 
 (async function () {
 
     await handleCallback();
 
+
     if (accessToken) {
 
-        document.getElementById(
-            "loginButton"
-        ).textContent = "Log out";
+        const loginButton =
+            document.getElementById(
+                "loginButton"
+            );
 
-        document.getElementById(
-            "loginButton"
-        ).onclick = logout;
+
+        loginButton.textContent =
+            "Log out";
+
+
+        loginButton.onclick =
+            logout;
+
 
         showHome();
 
+
         if (!player) {
+
             initializePlayer();
         }
     }
 
 })();
+
 </script>
 
 </body>
