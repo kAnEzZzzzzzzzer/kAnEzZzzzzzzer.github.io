@@ -25,7 +25,7 @@ body {
     min-height: 100vh;
 }
 
-/* SIDEBAR */
+/* Side bar */
 
 .sidebar {
     background: #000;
@@ -69,7 +69,7 @@ body {
     color: white;
 }
 
-/* MAIN */
+/* Main page */
 
 main {
     min-width: 0;
@@ -130,7 +130,7 @@ h2 {
     margin-top: 35px;
 }
 
-/* CARDS */
+/* Card s */
 
 .grid {
     display: grid;
@@ -176,7 +176,7 @@ h2 {
     text-overflow: ellipsis;
 }
 
-/* TRACKS */
+/* All the track thingys */
 
 .track {
     display: grid;
@@ -212,7 +212,7 @@ h2 {
     transform: scale(1.05);
 }
 
-/* STATUS */
+/* Current status */
 
 .status {
     color: #aaa;
@@ -226,7 +226,7 @@ h2 {
     border-radius: 8px;
 }
 
-/* HERO */
+/* hero */
 
 .hero {
     display: flex;
@@ -242,7 +242,7 @@ h2 {
     border-radius: 8px;
 }
 
-/* DJ X */
+/* DJ X w.i.p. */
 
 .dj-page {
     background: rgba(255,255,255,.07);
@@ -289,7 +289,7 @@ h2 {
     background: rgba(255,255,255,.1);
 }
 
-/* PLAYER */
+/* Music Player */
 
 .player {
     position: fixed;
@@ -375,7 +375,7 @@ h2 {
     cursor: pointer;
 }
 
-/* MOBILE */
+/* Mobile */
 
 @media(max-width:700px) {
 
@@ -498,7 +498,7 @@ h2 {
 </div>
 
 
-<!-- PLAYER -->
+<!-- Client player -->
 
 <div class="player">
 
@@ -565,9 +565,7 @@ h2 {
 
 <script>
 
-/* =========================================================
-   SPOTIFY SETTINGS
-   ========================================================= */
+/* important */
 
 const CLIENT_ID =
     "b70e6ed30b444ef3859d594d418c2aa1";
@@ -605,9 +603,7 @@ let currentSpotifyURL = "";
 let djMode = false;
 
 
-/* =========================================================
-   HELPERS
-   ========================================================= */
+/* Helpers */
 
 function $(id) {
     return document.getElementById(id);
@@ -662,9 +658,7 @@ function wait(ms) {
 }
 
 
-/* =========================================================
-   PKCE
-   ========================================================= */
+/* PKCE */
 
 function randomString(length = 64) {
 
@@ -706,9 +700,7 @@ async function sha256Base64URL(value) {
 }
 
 
-/* =========================================================
-   LOGIN
-   ========================================================= */
+/* log in */
 
 async function login() {
 
@@ -760,9 +752,7 @@ async function login() {
 }
 
 
-/* =========================================================
-   CALLBACK
-   ========================================================= */
+/* call back */
 
 async function handleCallback() {
 
@@ -879,9 +869,7 @@ async function handleCallback() {
 }
 
 
-/* =========================================================
-   SPOTIFY API
-   ========================================================= */
+/* spotfiy api */
 
 async function spotifyAPI(
     endpoint,
@@ -950,9 +938,7 @@ async function spotifyAPI(
 }
 
 
-/* =========================================================
-   WEB PLAYBACK SDK
-   ========================================================= */
+/* Web playback SDK */
 
 window.onSpotifyWebPlaybackSDKReady =
     function() {
@@ -1114,9 +1100,7 @@ window.onSpotifyWebPlaybackSDKReady =
     };
 
 
-/* =========================================================
-   PLAY TRACK
-   ========================================================= */
+/* play track */
 
 async function playTrack(track) {
 
@@ -1189,9 +1173,7 @@ async function playTrack(track) {
 }
 
 
-/* =========================================================
-   PLAY PLAYLIST
-   ========================================================= */
+/* Play playlist */
 
 async function playPlaylist(id) {
 
@@ -1241,9 +1223,7 @@ async function playPlaylist(id) {
 }
 
 
-/* =========================================================
-   DJ X
-   ========================================================= */
+/* Dj X */
 
 async function openDJX() {
 
@@ -1370,7 +1350,7 @@ async function startDJX() {
         );
 
         status(
-            "DJ X started on Spotify."
+            "DJ X started."
         );
 
     }
@@ -1419,9 +1399,7 @@ async function djXSkip() {
 }
 
 
-/* =========================================================
-   PLAYER CONTROLS
-   ========================================================= */
+/* Player controls */
 
 async function togglePlayback() {
 
@@ -1496,9 +1474,7 @@ async function previousTrack() {
 }
 
 
-/* =========================================================
-   SEARCH
-   ========================================================= */
+/* Search */
 
 async function searchSpotify() {
 
@@ -1574,10 +1550,9 @@ async function searchSpotify() {
 }
 
 
-/* =========================================================
-   SEARCH RESULTS
-   FIXED TO HANDLE NULL ITEMS
-   ========================================================= */
+
+ /* SEARCH RESULTS */
+   
 
 function renderSearch(data) {
 
@@ -1616,7 +1591,7 @@ function renderSearch(data) {
         of sections
     ) {
 
-        /*
+        /* notes:
          * Spotify can sometimes return null entries.
          * Remove them before trying to read properties.
          */
@@ -1770,9 +1745,7 @@ function renderSearch(data) {
 }
 
 
-/* =========================================================
-   OPEN RESULT
-   ========================================================= */
+/* OPEN RESULT */
 
 async function openItem(type, id) {
 
@@ -1836,9 +1809,7 @@ async function openItem(type, id) {
 }
 
 
-/* =========================================================
-   PLAYLIST PAGE
-   ========================================================= */
+/* Playlist page */
 
 async function openPlaylist(id) {
 
@@ -1952,9 +1923,7 @@ async function openPlaylist(id) {
 }
 
 
-/* =========================================================
-   TRACK ROW
-   ========================================================= */
+/* Track row */
 
 function trackRow(track) {
 
@@ -2009,9 +1978,7 @@ function trackRow(track) {
 }
 
 
-/* =========================================================
-   ALBUM
-   ========================================================= */
+/* ALBUM */
 
 function openAlbum(album) {
 
@@ -2094,9 +2061,7 @@ function openAlbum(album) {
 }
 
 
-/* =========================================================
-   ARTIST
-   ========================================================= */
+/* ARTIST */
 
 function openArtist(artist) {
 
@@ -2158,9 +2123,7 @@ function openArtist(artist) {
 }
 
 
-/* =========================================================
-   MY PLAYLISTS
-   ========================================================= */
+/* MY PLAYLISTS */
 
 async function loadPlaylists() {
 
@@ -2277,9 +2240,7 @@ async function loadPlaylists() {
 }
 
 
-/* =========================================================
-   HOME
-   ========================================================= */
+/* HOME */
 
 function home() {
 
@@ -2305,9 +2266,7 @@ function focusSearch() {
 }
 
 
-/* =========================================================
-   OPEN SPOTIFY
-   ========================================================= */
+/* OPEN SPOTIFY */
 
 function openSpotify() {
 
@@ -2322,9 +2281,7 @@ function openSpotify() {
 }
 
 
-/* =========================================================
-   ENTER KEY
-   ========================================================= */
+/* ENTER KEY */
 
 $("search").addEventListener(
     "keydown",
@@ -2340,9 +2297,7 @@ $("search").addEventListener(
 );
 
 
-/* =========================================================
-   START
-   ========================================================= */
+/* START */
 
 (async function() {
 
