@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Spotify Clone by Kane</title>
+<title>Spotify Clone</title>
 
 <script src="https://sdk.scdn.co/spotify-player.js"></script>
 
@@ -58,8 +58,6 @@ body {
     background: #1f1f1f;
     color: white;
 }
-
-/* DJ X — WHITE, NOT PURPLE */
 
 .dj-nav {
     margin-top: 18px;
@@ -244,9 +242,7 @@ h2 {
     border-radius: 8px;
 }
 
-/* DJ X PAGE
-   NORMAL DARK SPOTIFY STYLE — NO PURPLE
-*/
+/* DJ X */
 
 .dj-page {
     background: rgba(255,255,255,.07);
@@ -266,8 +262,6 @@ h2 {
     font-size: 17px;
     margin-bottom: 25px;
 }
-
-/* GREEN SPOTIFY BUTTON */
 
 .dj-button {
     border: none;
@@ -436,19 +430,19 @@ h2 {
     <aside class="sidebar">
 
         <div class="logo">
-              Spotify
+            ♫ Spotify Clone
         </div>
 
         <button class="nav-button active" onclick="home()">
-              Home
+            🏠 Home
         </button>
 
         <button class="nav-button" onclick="focusSearch()">
-              Search
+            🔎 Search
         </button>
 
         <button class="nav-button" onclick="loadPlaylists()">
-              My Playlists
+            📚 My Playlists
         </button>
 
         <button class="nav-button dj-nav" onclick="openDJX()">
@@ -631,7 +625,7 @@ function status(text, error = false) {
 
 function escapeHTML(value) {
 
-    return String(value || "")
+    return String(value ?? "")
         .replace(/&/g, "&amp;")
         .replace(/</g, "&lt;")
         .replace(/>/g, "&gt;")
@@ -641,6 +635,10 @@ function escapeHTML(value) {
 
 
 function image(item) {
+
+    if (!item) {
+        return "";
+    }
 
     return (
         item?.images?.[0]?.url ||
@@ -1036,12 +1034,15 @@ window.onSpotifyWebPlaybackSDKReady =
                 }
 
                 $("playerTitle").textContent =
-                    track.name;
+                    track.name || "Unknown track";
 
                 $("playerArtist").textContent =
                     (track.artists || [])
-                        .map(a => a.name)
-                        .join(", ");
+                        .filter(Boolean)
+                        .map(a => a?.name)
+                        .filter(Boolean)
+                        .join(", ") ||
+                    "Unknown artist";
 
                 if (
                     track.album?.images?.[0]?.url
@@ -1119,6 +1120,10 @@ window.onSpotifyWebPlaybackSDKReady =
 
 async function playTrack(track) {
 
+    if (!track) {
+        return;
+    }
+
     if (!deviceId) {
 
         alert(
@@ -1154,12 +1159,15 @@ async function playTrack(track) {
             image(track);
 
         $("playerTitle").textContent =
-            track.name;
+            track.name || "Unknown track";
 
         $("playerArtist").textContent =
             (track.artists || [])
-                .map(a => a.name)
-                .join(", ");
+                .filter(Boolean)
+                .map(a => a?.name)
+                .filter(Boolean)
+                .join(", ") ||
+            "Unknown artist";
 
         currentSpotifyURL =
             spotifyURL(track);
@@ -1314,7 +1322,6 @@ async function openDJX() {
                 >
                 `
             );
-
         }
 
     }
@@ -1553,6 +1560,11 @@ async function searchSpotify() {
     }
     catch (error) {
 
+        console.error(
+            "Spotify search error:",
+            error
+        );
+
         status(
             error.message,
             true
@@ -1564,6 +1576,7 @@ async function searchSpotify() {
 
 /* =========================================================
    SEARCH RESULTS
+   FIXED TO HANDLE NULL ITEMS
    ========================================================= */
 
 function renderSearch(data) {
@@ -1574,34 +1587,43 @@ function renderSearch(data) {
 
         [
             "Songs",
-            data.tracks?.items || [],
+            data?.tracks?.items || [],
             "track"
         ],
 
         [
             "Artists",
-            data.artists?.items || [],
+            data?.artists?.items || [],
             "artist"
         ],
 
         [
             "Albums",
-            data.albums?.items || [],
+            data?.albums?.items || [],
             "album"
         ],
 
         [
             "Playlists",
-            data.playlists?.items || [],
+            data?.playlists?.items || [],
             "playlist"
         ]
 
     ];
 
     for (
-        const [name, items, type]
+        const [name, rawItems, type]
         of sections
     ) {
+
+        /*
+         * Spotify can sometimes return null entries.
+         * Remove them before trying to read properties.
+         */
+        const items =
+            Array.isArray(rawItems)
+                ? rawItems.filter(item => item != null)
+                : [];
 
         if (!items.length) {
             continue;
@@ -1609,7 +1631,7 @@ function renderSearch(data) {
 
         output +=
             "<h2>" +
-            name +
+            escapeHTML(name) +
             "</h2>";
 
         output +=
@@ -1619,6 +1641,16 @@ function renderSearch(data) {
             const item
             of items
         ) {
+
+            if (!item) {
+                continue;
+            }
+
+            const itemID =
+                item.id || "";
+
+            const itemName =
+                item.name || "Unknown";
 
             const img =
                 image(item);
@@ -1630,7 +1662,9 @@ function renderSearch(data) {
 
                 subtitle =
                     (item.artists || [])
-                        .map(a => a.name)
+                        .filter(Boolean)
+                        .map(a => a?.name)
+                        .filter(Boolean)
                         .join(", ");
 
             }
@@ -1646,19 +1680,30 @@ function renderSearch(data) {
 
                 subtitle =
                     (item.artists || [])
-                        .map(a => a.name)
+                        .filter(Boolean)
+                        .map(a => a?.name)
+                        .filter(Boolean)
                         .join(", ");
 
             }
 
-            else {
+            else if (type === "playlist") {
+
+                /*
+                 * FIX:
+                 * Use item?.owner instead of assuming
+                 * owner always exists.
+                 */
+
+                const ownerName =
+                    item?.owner?.display_name ||
+                    item?.owner?.name ||
+                    "";
 
                 subtitle =
-                    item.owner?.display_name
-                        ? "By " +
-                          item.owner.display_name
+                    ownerName
+                        ? "By " + ownerName
                         : "Spotify playlist";
-
             }
 
             output += `
@@ -1666,8 +1711,8 @@ function renderSearch(data) {
                 <div
                     class="card"
                     onclick="openItem(
-                        '${type}',
-                        '${escapeHTML(item.id)}'
+                        '${escapeHTML(type)}',
+                        '${escapeHTML(itemID)}'
                     )"
                 >
 
@@ -1693,7 +1738,7 @@ function renderSearch(data) {
                     }
 
                     <div class="card-title">
-                        ${escapeHTML(item.name)}
+                        ${escapeHTML(itemName)}
                     </div>
 
                     <div class="card-subtitle">
@@ -1730,6 +1775,10 @@ function renderSearch(data) {
    ========================================================= */
 
 async function openItem(type, id) {
+
+    if (!id) {
+        return;
+    }
 
     try {
 
@@ -1803,7 +1852,7 @@ async function openPlaylist(id) {
             );
 
         $("heading").textContent =
-            playlist.name;
+            playlist.name || "Playlist";
 
         let output = "";
 
@@ -1828,7 +1877,10 @@ async function openPlaylist(id) {
                 <div>
 
                     <h2 style="margin:0 0 8px">
-                        ${escapeHTML(playlist.name)}
+                        ${escapeHTML(
+                            playlist.name ||
+                            "Playlist"
+                        )}
                     </h2>
 
                     <div class="status">
@@ -1855,14 +1907,18 @@ async function openPlaylist(id) {
         `;
 
         const items =
-            playlist.items?.items ||
-            playlist.tracks?.items ||
+            playlist?.items?.items ||
+            playlist?.tracks?.items ||
             [];
 
         for (
             const item
             of items
         ) {
+
+            if (!item) {
+                continue;
+            }
 
             const track =
                 item.item ||
@@ -1902,6 +1958,20 @@ async function openPlaylist(id) {
 
 function trackRow(track) {
 
+    if (!track) {
+        return "";
+    }
+
+    const trackName =
+        track.name || "Unknown track";
+
+    const artists =
+        (track.artists || [])
+            .filter(Boolean)
+            .map(a => a?.name)
+            .filter(Boolean)
+            .join(", ");
+
     return `
 
         <div class="track">
@@ -1914,19 +1984,14 @@ function trackRow(track) {
             <div>
 
                 <div class="card-title">
-                    ${escapeHTML(track.name)}
+                    ${escapeHTML(trackName)}
                 </div>
 
                 <div class="card-subtitle">
-
-                    ${
-                        escapeHTML(
-                            (track.artists || [])
-                                .map(a => a.name)
-                                .join(", ")
-                        )
-                    }
-
+                    ${escapeHTML(
+                        artists ||
+                        "Unknown artist"
+                    )}
                 </div>
 
             </div>
@@ -1950,8 +2015,12 @@ function trackRow(track) {
 
 function openAlbum(album) {
 
+    if (!album) {
+        return;
+    }
+
     $("heading").textContent =
-        album.name;
+        album.name || "Album";
 
     let output =
         `<div class="hero">`;
@@ -1974,15 +2043,21 @@ function openAlbum(album) {
         <div>
 
             <h2 style="margin:0 0 8px">
-                ${escapeHTML(album.name)}
+                ${escapeHTML(
+                    album.name ||
+                    "Album"
+                )}
             </h2>
 
             <div class="status">
                 ${
                     escapeHTML(
                         (album.artists || [])
-                            .map(a => a.name)
-                            .join(", ")
+                            .filter(Boolean)
+                            .map(a => a?.name)
+                            .filter(Boolean)
+                            .join(", ") ||
+                        "Unknown artist"
                     )
                 }
             </div>
@@ -1997,6 +2072,10 @@ function openAlbum(album) {
         const track
         of album.tracks?.items || []
     ) {
+
+        if (!track) {
+            continue;
+        }
 
         track.album =
             album;
@@ -2021,8 +2100,12 @@ function openAlbum(album) {
 
 function openArtist(artist) {
 
+    if (!artist) {
+        return;
+    }
+
     $("heading").textContent =
-        artist.name;
+        artist.name || "Artist";
 
     $("results").innerHTML = `
 
@@ -2047,7 +2130,10 @@ function openArtist(artist) {
             }
 
             <div class="card-title">
-                ${escapeHTML(artist.name)}
+                ${escapeHTML(
+                    artist.name ||
+                    "Unknown artist"
+                )}
             </div>
 
             <div class="card-subtitle">
@@ -2104,9 +2190,13 @@ async function loadPlaylists() {
         let output =
             '<div class="grid">';
 
+        const playlists =
+            (data?.items || [])
+                .filter(Boolean);
+
         for (
             const playlist
-            of data.items || []
+            of playlists
         ) {
 
             const img =
@@ -2117,7 +2207,7 @@ async function loadPlaylists() {
                 <div
                     class="card"
                     onclick="openPlaylist(
-                        '${escapeHTML(playlist.id)}'
+                        '${escapeHTML(playlist.id || "")}'
                     )"
                 >
 
@@ -2143,7 +2233,10 @@ async function loadPlaylists() {
                     }
 
                     <div class="card-title">
-                        ${escapeHTML(playlist.name)}
+                        ${escapeHTML(
+                            playlist.name ||
+                            "Untitled playlist"
+                        )}
                     </div>
 
                     <div class="card-subtitle">
@@ -2168,7 +2261,7 @@ async function loadPlaylists() {
             output;
 
         status(
-            (data.items || []).length +
+            playlists.length +
             " playlists loaded."
         );
 
@@ -2230,7 +2323,7 @@ function openSpotify() {
 
 
 /* =========================================================
-   ENTER KEY SEARCH
+   ENTER KEY
    ========================================================= */
 
 $("search").addEventListener(
