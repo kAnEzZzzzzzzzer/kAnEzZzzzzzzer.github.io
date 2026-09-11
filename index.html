@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -17,6 +18,84 @@ body {
     background: #000;
     color: white;
     font-family: Arial, Helvetica, sans-serif;
+}
+
+/* PASSWORD SCREEN */
+
+#passwordScreen {
+    position: fixed;
+    inset: 0;
+    background: #000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 99999;
+}
+
+.password-box {
+    width: 90%;
+    max-width: 400px;
+    background: #181818;
+    padding: 35px;
+    border-radius: 12px;
+    text-align: center;
+    box-shadow: 0 10px 40px rgba(0,0,0,.5);
+}
+
+.password-logo {
+    font-size: 28px;
+    font-weight: bold;
+    margin-bottom: 10px;
+}
+
+.password-subtitle {
+    color: #aaa;
+    margin-bottom: 25px;
+}
+
+.password-input {
+    width: 100%;
+    padding: 14px 16px;
+    border: 1px solid #555;
+    border-radius: 7px;
+    background: #282828;
+    color: white;
+    font-size: 16px;
+    outline: none;
+    margin-bottom: 12px;
+}
+
+.password-input:focus {
+    border-color: #1ed760;
+}
+
+.password-button {
+    width: 100%;
+    padding: 14px;
+    border: none;
+    border-radius: 25px;
+    background: #1ed760;
+    color: black;
+    font-weight: bold;
+    font-size: 15px;
+    cursor: pointer;
+}
+
+.password-button:hover {
+    background: #1fdf64;
+}
+
+.password-error {
+    color: #ff7777;
+    margin-top: 12px;
+    min-height: 18px;
+    font-size: 14px;
+}
+
+/* APP */
+
+#appWrapper {
+    display: none;
 }
 
 .app {
@@ -134,7 +213,7 @@ h2 {
     margin-top: 35px;
 }
 
-/* Card s */
+/* Cards */
 
 .grid {
     display: grid;
@@ -180,7 +259,7 @@ h2 {
     text-overflow: ellipsis;
 }
 
-/* All the track thingys */
+/* Tracks */
 
 .track {
     display: grid;
@@ -230,7 +309,7 @@ h2 {
     border-radius: 8px;
 }
 
-/* hero */
+/* Hero */
 
 .hero {
     display: flex;
@@ -246,7 +325,7 @@ h2 {
     border-radius: 8px;
 }
 
-/* DJ X w.i.p. */
+/* DJ X */
 
 .dj-page {
     background: rgba(255,255,255,.07);
@@ -281,16 +360,6 @@ h2 {
 
 .dj-button:hover {
     background: #1fdf64;
-}
-
-.dj-skip {
-    border: 1px solid #777;
-    background: transparent;
-    color: white;
-}
-
-.dj-skip:hover {
-    background: rgba(255,255,255,.1);
 }
 
 /* Music Player */
@@ -425,149 +494,267 @@ h2 {
     }
 }
 </style>
+
 </head>
 
 <body>
 
-<div class="app">
+<!-- PASSWORD SCREEN -->
 
-    <aside class="sidebar">
+<div id="passwordScreen">
 
-        <div class="logo">
-               Spotify Clone
-        </div>
+```
+<div class="password-box">
 
-        <button class="nav-button logged-in-nav active" onclick="home()">
-              Home
-        </button>
+    <div class="password-logo">
+        Spotify Clone
+    </div>
 
-        <button class="nav-button logged-in-nav" onclick="focusSearch()">
-              Search
-        </button>
+    <div class="password-subtitle">
+        Enter the password to continue
+    </div>
 
-        <button class="nav-button logged-in-nav" onclick="loadPlaylists()">
-              My Playlists
-        </button>
+    <input
+        id="passwordInput"
+        class="password-input"
+        type="password"
+        placeholder="Password"
+        autocomplete="off"
+    >
 
-        <button class="nav-button logged-in-nav dj-nav" onclick="openDJX()">
-              DJ X
-        </button>
+    <button
+        class="password-button"
+        onclick="checkPassword()"
+    >
+        Continue
+    </button>
 
-    </aside>
+    <div
+        id="passwordError"
+        class="password-error"
+    ></div>
 
-    <main>
-
-        <div class="topbar">
-
-            <input
-                id="search"
-                class="search"
-                placeholder="What do you want to play?"
-                autocomplete="off"
-            >
-
-            <button
-                class="search-button"
-                onclick="searchSpotify()"
-            >
-                Search
-            </button>
-
-            <button
-                id="loginButton"
-                class="login-button"
-                onclick="login()"
-            >
-                Log in
-            </button>
-
-        </div>
-
-        <div class="content">
-
-            <h1 id="heading">
-                Spotify Clone
-            </h1>
-
-            <div id="status" class="status">
-                Log in with Spotify to search music.
-            </div>
-
-            <div id="results"></div>
-
-        </div>
-
-    </main>
+</div>
+```
 
 </div>
 
+<!-- ACTUAL APP -->
 
-<!-- Client player -->
+<div id="appWrapper">
 
-<div class="player">
+<div class="app">
 
-    <img id="playerImage" src="" alt="">
+```
+<aside class="sidebar">
 
-    <div class="player-info">
-
-        <div
-            id="playerTitle"
-            class="player-title"
-        >
-            Nothing playing
-        </div>
-
-        <div
-            id="playerArtist"
-            class="player-artist"
-        >
-            Choose a song
-        </div>
-
-    </div>
-
-    <div class="player-controls">
-
-        <button
-            class="control-button"
-            onclick="previousTrack()"
-            title="Previous"
-        >
-            ⏮
-        </button>
-
-        <button
-            id="playButton"
-            class="control-button play-control"
-            onclick="togglePlayback()"
-            title="Play/Pause"
-        >
-            ▶
-        </button>
-
-        <button
-            class="control-button"
-            onclick="nextTrack()"
-            title="Next"
-        >
-            ⏭
-        </button>
-
+    <div class="logo">
+        Spotify Clone
     </div>
 
     <button
-        id="spotifyButton"
-        class="spotify-button"
-        style="display:none"
-        onclick="openSpotify()"
+        class="nav-button logged-in-nav active"
+        onclick="home()"
     >
-        Open in Spotify
+        Home
+    </button>
+
+    <button
+        class="nav-button logged-in-nav"
+        onclick="focusSearch()"
+    >
+        Search
+    </button>
+
+    <button
+        class="nav-button logged-in-nav"
+        onclick="loadPlaylists()"
+    >
+        My Playlists
+    </button>
+
+    <button
+        class="nav-button logged-in-nav dj-nav"
+        onclick="openDJX()"
+    >
+        DJ X
+    </button>
+
+</aside>
+
+<main>
+
+    <div class="topbar">
+
+        <input
+            id="search"
+            class="search"
+            placeholder="What do you want to play?"
+            autocomplete="off"
+        >
+
+        <button
+            class="search-button"
+            onclick="searchSpotify()"
+        >
+            Search
+        </button>
+
+        <button
+            id="loginButton"
+            class="login-button"
+            onclick="login()"
+        >
+            Log in
+        </button>
+
+    </div>
+
+    <div class="content">
+
+        <h1 id="heading">
+            Spotify Clone
+        </h1>
+
+        <div id="status" class="status">
+            Log in with Spotify to search music.
+        </div>
+
+        <div id="results"></div>
+
+    </div>
+
+</main>
+```
+
+</div>
+
+<div class="player">
+
+```
+<img id="playerImage" src="" alt="">
+
+<div class="player-info">
+
+    <div id="playerTitle" class="player-title">
+        Nothing playing
+    </div>
+
+    <div id="playerArtist" class="player-artist">
+        Choose a song
+    </div>
+
+</div>
+
+<div class="player-controls">
+
+    <button
+        class="control-button"
+        onclick="previousTrack()"
+        title="Previous"
+    >
+        ⏮
+    </button>
+
+    <button
+        id="playButton"
+        class="control-button play-control"
+        onclick="togglePlayback()"
+        title="Play/Pause"
+    >
+        ▶
+    </button>
+
+    <button
+        class="control-button"
+        onclick="nextTrack()"
+        title="Next"
+    >
+        ⏭
     </button>
 
 </div>
 
+<button
+    id="spotifyButton"
+    class="spotify-button"
+    style="display:none"
+    onclick="openSpotify()"
+>
+    Open in Spotify
+</button>
+```
+
+</div>
+
+</div>
 
 <script>
+
+/* PASSWORD PROTECTION */
+
+const PAGE_PASSWORD = "clever";
+
+function unlockPage() {
+
+    $("passwordScreen").style.display = "none";
+    $("appWrapper").style.display = "block";
+
+}
+
+function checkPassword() {
+
+    const entered =
+        $("passwordInput").value;
+
+    if (entered === PAGE_PASSWORD) {
+
+        sessionStorage.setItem(
+            "spotify_clone_unlocked",
+            "true"
+        );
+
+        unlockPage();
+
+    }
+    else {
+
+        $("passwordError").textContent =
+            "Incorrect password.";
+
+        $("passwordInput").value = "";
+
+        $("passwordInput").focus();
+
+    }
+
+}
+
+
+/* Allow Enter key on password */
+
+document.getElementById("passwordInput")
+    .addEventListener("keydown", function(event) {
+
+        if (event.key === "Enter") {
+            checkPassword();
+        }
+
+    });
+
+
+/* Check if already unlocked in this tab */
+
+if (
+    sessionStorage.getItem(
+        "spotify_clone_unlocked"
+    ) === "true"
+) {
+
+    unlockPage();
+
+}
+
 
 /* important */
 
@@ -614,9 +801,18 @@ function $(id) {
 }
 
 function updateLoggedInNavigation() {
-    document.querySelectorAll('.logged-in-nav').forEach(button => {
-        button.style.display = accessToken ? 'block' : 'none';
-    });
+
+    document
+        .querySelectorAll(".logged-in-nav")
+        .forEach(button => {
+
+            button.style.display =
+                accessToken
+                    ? "block"
+                    : "none";
+
+        });
+
 }
 
 
@@ -626,6 +822,7 @@ function status(text, error = false) {
 
     $("status").className =
         error ? "error" : "status";
+
 }
 
 
@@ -637,6 +834,7 @@ function escapeHTML(value) {
         .replace(/>/g, "&gt;")
         .replace(/"/g, "&quot;")
         .replace(/'/g, "&#039;");
+
 }
 
 
@@ -651,12 +849,14 @@ function image(item) {
         item?.album?.images?.[0]?.url ||
         ""
     );
+
 }
 
 
 function spotifyURL(item) {
 
     return item?.external_urls?.spotify || "#";
+
 }
 
 
@@ -665,6 +865,7 @@ function wait(ms) {
     return new Promise(resolve =>
         setTimeout(resolve, ms)
     );
+
 }
 
 
@@ -685,6 +886,7 @@ function randomString(length = 64) {
             characters[byte % characters.length]
         )
         .join("");
+
 }
 
 
@@ -707,6 +909,7 @@ async function sha256Base64URL(value) {
     .replace(/\+/g, "-")
     .replace(/\//g, "_")
     .replace(/=+$/, "");
+
 }
 
 
@@ -759,10 +962,11 @@ async function login() {
 
     window.location.href =
         url.toString();
+
 }
 
 
-/* call back */
+/* callback */
 
 async function handleCallback() {
 
@@ -785,6 +989,7 @@ async function handleCallback() {
         throw new Error(
             "Spotify login failed: " + error
         );
+
     }
 
     if (!code) {
@@ -799,6 +1004,7 @@ async function handleCallback() {
         throw new Error(
             "Spotify security check failed."
         );
+
     }
 
     const verifier =
@@ -836,6 +1042,7 @@ async function handleCallback() {
                             verifier
 
                     })
+
             }
         );
 
@@ -848,6 +1055,7 @@ async function handleCallback() {
             data.error_description ||
             "Could not get Spotify access token."
         );
+
     }
 
     accessToken =
@@ -867,6 +1075,7 @@ async function handleCallback() {
             "spotify_refresh_token",
             refreshToken
         );
+
     }
 
     window.history.replaceState(
@@ -876,10 +1085,11 @@ async function handleCallback() {
     );
 
     return true;
+
 }
 
 
-/* spotfiy api */
+/* Spotify API */
 
 async function spotifyAPI(
     endpoint,
@@ -891,6 +1101,7 @@ async function spotifyAPI(
         throw new Error(
             "Please log in with Spotify first."
         );
+
     }
 
     const headers = {
@@ -904,6 +1115,7 @@ async function spotifyAPI(
 
         headers["Content-Type"] =
             "application/json";
+
     }
 
     const response =
@@ -917,6 +1129,7 @@ async function spotifyAPI(
                     ...headers,
                     ...(options.headers || {})
                 }
+
             }
         );
 
@@ -942,9 +1155,11 @@ async function spotifyAPI(
             "Spotify API error: " +
             response.status
         );
+
     }
 
     return data;
+
 }
 
 
@@ -1010,6 +1225,7 @@ window.onSpotifyWebPlaybackSDKReady =
 
                 playerReady =
                     false;
+
             }
         );
 
@@ -1180,6 +1396,7 @@ async function playTrack(track) {
         );
 
     }
+
 }
 
 
@@ -1230,10 +1447,11 @@ async function playPlaylist(id) {
         );
 
     }
+
 }
 
 
-/* Dj X */
+/* DJ X */
 
 async function openDJX() {
 
@@ -1258,8 +1476,6 @@ async function openDJX() {
             >
                 Start DJ X
             </button>
-
-
 
         </div>
 
@@ -1307,6 +1523,7 @@ async function openDJX() {
                 >
                 `
             );
+
         }
 
     }
@@ -1318,6 +1535,7 @@ async function openDJX() {
         );
 
     }
+
 }
 
 
@@ -1368,6 +1586,7 @@ async function startDJX() {
         );
 
     }
+
 }
 
 
@@ -1397,6 +1616,7 @@ async function togglePlayback() {
         );
 
     }
+
 }
 
 
@@ -1420,6 +1640,7 @@ async function nextTrack() {
         );
 
     }
+
 }
 
 
@@ -1443,6 +1664,7 @@ async function previousTrack() {
         );
 
     }
+
 }
 
 
@@ -1519,12 +1741,11 @@ async function searchSpotify() {
         );
 
     }
+
 }
 
 
-
- /* SEARCH RESULTS */
-   
+/* SEARCH RESULTS */
 
 function renderSearch(data) {
 
@@ -1563,10 +1784,6 @@ function renderSearch(data) {
         of sections
     ) {
 
-        /* notes:
-         * Spotify can sometimes return null entries.
-         * Remove them before trying to read properties.
-         */
         const items =
             Array.isArray(rawItems)
                 ? rawItems.filter(item => item != null)
@@ -1636,12 +1853,6 @@ function renderSearch(data) {
 
             else if (type === "playlist") {
 
-                /*
-                 * FIX:
-                 * Use item?.owner instead of assuming
-                 * owner always exists.
-                 */
-
                 const ownerName =
                     item?.owner?.display_name ||
                     item?.owner?.name ||
@@ -1651,6 +1862,7 @@ function renderSearch(data) {
                     ownerName
                         ? "By " + ownerName
                         : "Spotify playlist";
+
             }
 
             output += `
@@ -1665,16 +1877,12 @@ function renderSearch(data) {
 
                     ${
                         img
-
                         ?
-
                         `<img
                             src="${escapeHTML(img)}"
                             alt=""
                         >`
-
                         :
-
                         `<div
                             style="
                                 aspect-ratio:1;
@@ -1714,6 +1922,7 @@ function renderSearch(data) {
 
     $("results").innerHTML =
         output;
+
 }
 
 
@@ -1778,6 +1987,7 @@ async function openItem(type, id) {
         );
 
     }
+
 }
 
 
@@ -1892,6 +2102,7 @@ async function openPlaylist(id) {
         );
 
     }
+
 }
 
 
@@ -1947,6 +2158,7 @@ function trackRow(track) {
         </div>
 
     `;
+
 }
 
 
@@ -2030,6 +2242,7 @@ function openAlbum(album) {
     status(
         "Album loaded."
     );
+
 }
 
 
@@ -2053,16 +2266,12 @@ function openArtist(artist) {
 
             ${
                 image(artist)
-
                 ?
-
                 `<img
                     src="${escapeHTML(image(artist))}"
                     alt=""
                 >`
-
                 :
-
                 ""
             }
 
@@ -2092,6 +2301,7 @@ function openArtist(artist) {
     status(
         "Artist loaded."
     );
+
 }
 
 
@@ -2148,16 +2358,12 @@ async function loadPlaylists() {
 
                     ${
                         img
-
                         ?
-
                         `<img
                             src="${escapeHTML(img)}"
                             alt=""
                         >`
-
                         :
-
                         `<div
                             style="
                                 aspect-ratio:1;
@@ -2209,6 +2415,7 @@ async function loadPlaylists() {
         );
 
     }
+
 }
 
 
@@ -2229,12 +2436,14 @@ function home() {
             ? "Ready. Search Spotify above."
             : "Log in with Spotify to search music."
     );
+
 }
 
 
 function focusSearch() {
 
     $("search").focus();
+
 }
 
 
@@ -2250,6 +2459,7 @@ function openSpotify() {
         );
 
     }
+
 }
 
 
@@ -2314,6 +2524,7 @@ $("search").addEventListener(
                         "";
 
                     updateLoggedInNavigation();
+
                     location.reload();
 
                 };
