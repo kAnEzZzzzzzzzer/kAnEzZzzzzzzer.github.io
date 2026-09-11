@@ -40,6 +40,10 @@ body {
     margin-bottom: 35px;
 }
 
+.nav-button.logged-in-nav {
+    display: none;
+}
+
 .nav-button {
     width: 100%;
     padding: 13px;
@@ -242,6 +246,53 @@ h2 {
     border-radius: 8px;
 }
 
+/* DJ X w.i.p. */
+
+.dj-page {
+    background: rgba(255,255,255,.07);
+    border-radius: 15px;
+    padding: 35px;
+    margin-top: 20px;
+}
+
+.dj-title {
+    font-size: 55px;
+    font-weight: 800;
+    margin: 0 0 10px;
+}
+
+.dj-description {
+    color: #bbb;
+    font-size: 17px;
+    margin-bottom: 25px;
+}
+
+.dj-button {
+    border: none;
+    border-radius: 30px;
+    padding: 14px 25px;
+    background: #1ed760;
+    color: black;
+    font-weight: bold;
+    cursor: pointer;
+    font-size: 15px;
+    margin-right: 8px;
+}
+
+.dj-button:hover {
+    background: #1fdf64;
+}
+
+.dj-skip {
+    border: 1px solid #777;
+    background: transparent;
+    color: white;
+}
+
+.dj-skip:hover {
+    background: rgba(255,255,255,.1);
+}
+
 /* Music Player */
 
 .player {
@@ -318,6 +369,16 @@ h2 {
     background: #ddd;
 }
 
+.spotify-button {
+    background: #1ed760;
+    color: black;
+    border: none;
+    padding: 10px 18px;
+    border-radius: 20px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
 /* Mobile */
 
 @media(max-width:700px) {
@@ -358,6 +419,10 @@ h2 {
     .player-info {
         min-width: 100px;
     }
+
+    .spotify-button {
+        display: none;
+    }
 }
 </style>
 </head>
@@ -372,18 +437,23 @@ h2 {
                Spotify Clone
         </div>
 
-        <button class="nav-button sidebar-nav" id="homeNav" style="display:none" onclick="home()">
+        <button class="nav-button logged-in-nav active" onclick="home()">
               Home
         </button>
 
-        <button class="nav-button sidebar-nav" id="searchNav" style="display:none" onclick="focusSearch()">
+        <button class="nav-button logged-in-nav" onclick="focusSearch()">
               Search
         </button>
 
-        <button class="nav-button sidebar-nav" id="playlistsNav" style="display:none" onclick="loadPlaylists()">
+        <button class="nav-button logged-in-nav" onclick="loadPlaylists()">
               My Playlists
         </button>
-</aside>
+
+        <button class="nav-button logged-in-nav dj-nav" onclick="openDJX()">
+              DJ X
+        </button>
+
+    </aside>
 
     <main>
 
@@ -484,6 +554,16 @@ h2 {
         </button>
 
     </div>
+
+    <button
+        id="spotifyButton"
+        class="spotify-button"
+        style="display:none"
+        onclick="openSpotify()"
+    >
+        Open in Spotify
+    </button>
+
 </div>
 
 
@@ -522,13 +602,21 @@ let deviceId = null;
 
 let playerReady = false;
 
+let currentSpotifyURL = "";
 
+let djMode = false;
 
 
 /* Helpers */
 
 function $(id) {
     return document.getElementById(id);
+}
+
+function updateLoggedInNavigation() {
+    document.querySelectorAll('.logged-in-nav').forEach(button => {
+        button.style.display = accessToken ? 'block' : 'none';
+    });
 }
 
 
@@ -961,6 +1049,15 @@ window.onSpotifyWebPlaybackSDKReady =
 
                 }
 
+                currentSpotifyURL =
+                    track.external_urls?.spotify ||
+                    "";
+
+                $("spotifyButton").style.display =
+                    currentSpotifyURL
+                        ? "block"
+                        : "none";
+
                 $("playButton").textContent =
                     state.paused
                         ? "▶"
@@ -1033,6 +1130,8 @@ async function playTrack(track) {
 
     try {
 
+        djMode = false;
+
         await spotifyAPI(
             "/me/player/play?device_id=" +
             encodeURIComponent(deviceId),
@@ -1064,6 +1163,14 @@ async function playTrack(track) {
                 .join(", ") ||
             "Unknown artist";
 
+        currentSpotifyURL =
+            spotifyURL(track);
+
+        $("spotifyButton").style.display =
+            currentSpotifyURL !== "#"
+                ? "block"
+                : "none";
+
     }
     catch (error) {
 
@@ -1091,6 +1198,8 @@ async function playPlaylist(id) {
 
     try {
 
+        djMode = false;
+
         await spotifyAPI(
             "/me/player/play?device_id=" +
             encodeURIComponent(deviceId),
@@ -1116,6 +1225,144 @@ async function playPlaylist(id) {
     catch (error) {
 
         status(
+            error.message,
+            true
+        );
+
+    }
+}
+
+
+/* Dj X */
+
+async function openDJX() {
+
+    $("heading").textContent =
+        "DJ X";
+
+    $("results").innerHTML = `
+
+        <div class="dj-page">
+
+            <div class="dj-title">
+                DJ X
+            </div>
+
+            <div class="dj-description">
+                Spotify DJ X
+            </div>
+
+            <button
+                class="dj-button"
+                onclick="startDJX()"
+            >
+                ▶ Start DJ X
+            </button>
+
+
+
+        </div>
+
+    `;
+
+    currentSpotifyURL =
+        "https://open.spotify.com/playlist/" +
+        DJ_X_PLAYLIST_ID;
+
+    $("spotifyButton").style.display =
+        "block";
+
+    status(
+        "DJ X is ready."
+    );
+
+    try {
+
+        const playlist =
+            await spotifyAPI(
+                "/playlists/" +
+                DJ_X_PLAYLIST_ID +
+                "?market=US"
+            );
+
+        const cover =
+            image(playlist);
+
+        if (cover) {
+
+            $("results").querySelector(
+                ".dj-page"
+            ).insertAdjacentHTML(
+                "afterbegin",
+                `
+                <img
+                    src="${escapeHTML(cover)}"
+                    style="
+                        width:180px;
+                        height:180px;
+                        object-fit:cover;
+                        border-radius:10px;
+                        margin-bottom:20px;
+                    "
+                >
+                `
+            );
+        }
+
+    }
+    catch (error) {
+
+        console.log(
+            "Could not load DJ X details:",
+            error.message
+        );
+
+    }
+}
+
+
+async function startDJX() {
+
+    if (!deviceId) {
+
+        alert(
+            "Spotify player is not ready yet. " +
+            "Please wait a moment after logging in."
+        );
+
+        return;
+    }
+
+    try {
+
+        djMode = true;
+
+        await spotifyAPI(
+            "/me/player/play?device_id=" +
+            encodeURIComponent(deviceId),
+            {
+                method: "PUT",
+
+                body: JSON.stringify({
+
+                    context_uri:
+                        "spotify:playlist:" +
+                        DJ_X_PLAYLIST_ID
+
+                })
+
+            }
+        );
+
+        status(
+            "DJ X started."
+        );
+
+    }
+    catch (error) {
+
+        status(
+            "DJ X could not be started: " +
             error.message,
             true
         );
@@ -1834,6 +2081,14 @@ function openArtist(artist) {
 
     `;
 
+    currentSpotifyURL =
+        spotifyURL(artist);
+
+    $("spotifyButton").style.display =
+        currentSpotifyURL !== "#"
+            ? "block"
+            : "none";
+
     status(
         "Artist loaded."
     );
@@ -1961,6 +2216,8 @@ async function loadPlaylists() {
 
 function home() {
 
+    djMode = false;
+
     $("heading").textContent =
         "Spotify Clone";
 
@@ -1981,6 +2238,21 @@ function focusSearch() {
 }
 
 
+/* OPEN SPOTIFY */
+
+function openSpotify() {
+
+    if (currentSpotifyURL) {
+
+        window.open(
+            currentSpotifyURL,
+            "_blank"
+        );
+
+    }
+}
+
+
 /* ENTER KEY */
 
 $("search").addEventListener(
@@ -1997,26 +2269,18 @@ $("search").addEventListener(
 );
 
 
-function updateSidebarVisibility() {
-    const loggedIn = !!accessToken;
-    document.querySelectorAll(".sidebar-nav").forEach(button => {
-        button.style.display = loggedIn ? "block" : "none";
-    });
-}
-
 /* START */
 
 (async function() {
 
     try {
-        updateSidebarVisibility();
 
         const callback =
             await handleCallback();
 
-        if (accessToken) {
+        updateLoggedInNavigation();
 
-            updateSidebarVisibility();
+        if (accessToken) {
 
             $("loginButton").textContent =
                 "Log out";
@@ -2049,6 +2313,7 @@ function updateSidebarVisibility() {
                     accessToken =
                         "";
 
+                    updateLoggedInNavigation();
                     location.reload();
 
                 };
