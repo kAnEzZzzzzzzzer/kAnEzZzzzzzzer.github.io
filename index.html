@@ -677,12 +677,6 @@ $("playerPassword").addEventListener("keydown", event => {
     if (event.key === "Enter") unlockPlayer();
 });
 
-// Remember the unlock between page loads in this browser.
-if (localStorage.getItem(PASSWORD_STORAGE_KEY) === "true") {
-    showPlayer();
-}
-
-
 /* important */
 
 const CLIENT_ID =
@@ -2457,6 +2451,12 @@ async function startApp() {
         );
 
     }
+}
+
+// Restore the password unlock only after all app variables and functions
+// have been initialized, so Spotify login can work normally.
+if (localStorage.getItem(PASSWORD_STORAGE_KEY) === "true") {
+    showPlayer();
 }
 
 </script>
