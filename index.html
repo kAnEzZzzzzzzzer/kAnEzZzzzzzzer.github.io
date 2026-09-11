@@ -164,7 +164,7 @@ h2 {
     text-overflow: ellipsis;
 }
 
-/* TRACKS */
+/* TRACK LIST */
 
 .track {
     display: grid;
@@ -319,7 +319,6 @@ h2 {
                 id="search"
                 class="search"
                 placeholder="What do you want to play?"
-                autocomplete="off"
             >
 
             <button
@@ -405,7 +404,7 @@ const CLIENT_ID =
     "b70e6ed30b444ef3859d594d418c2aa1";
 
 const REDIRECT_URI =
-    "https://kanezzzzzzzzzer.github.io/kAnEzZzzzzzzer.github.io/";
+    "http://127.0.0.1:8080";
 
 
 const SCOPES =
@@ -1009,7 +1008,7 @@ function renderSearch(data) {
 
 
 /* =========================================================
-   OPEN RESULT
+   OPEN SEARCH RESULT
    ========================================================= */
 
 async function openItem(type, id) {
@@ -1074,7 +1073,7 @@ async function openItem(type, id) {
 
 
 /* =========================================================
-   TRACK PLAYER
+   SELECT TRACK
    ========================================================= */
 
 function selectTrack(track) {
@@ -1118,7 +1117,7 @@ function openSpotify() {
 
 
 /* =========================================================
-   PLAYLIST
+   PLAYLISTS
    ========================================================= */
 
 async function openPlaylist(id) {
@@ -1181,6 +1180,7 @@ async function openPlaylist(id) {
 
             if (!item.track) continue;
 
+
             output +=
                 trackRow(item.track);
 
@@ -1222,6 +1222,7 @@ function trackRow(track) {
                 alt=""
             >
 
+
             <div>
 
                 <div class="card-title">
@@ -1239,6 +1240,7 @@ function trackRow(track) {
                 </div>
 
             </div>
+
 
             <button
                 class="play-button"
@@ -1311,10 +1313,7 @@ function openArtist(artist) {
 
     $("results").innerHTML = `
 
-        <div
-            class="card"
-            style="max-width:300px"
-        >
+        <div class="card" style="max-width:300px">
 
             ${
                 image(artist)
@@ -1552,10 +1551,6 @@ $("search").addEventListener(
 
                     localStorage.removeItem(
                         "spotify_access_token"
-                    );
-
-                    localStorage.removeItem(
-                        "spotify_refresh_token"
                     );
 
                     accessToken = "";
