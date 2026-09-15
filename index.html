@@ -6,6 +6,7 @@
 <title>Spotify by Kane</title>
 
 
+
 <style>
 * {
     box-sizing: border-box;
@@ -423,29 +424,26 @@ h2 {
         display: none;
     }
 }
+    /* Blank launch gate */
+    #passwordGate {
+        position: fixed;
+        inset: 0;
+        z-index: 9999;
+        display: block;
+        background: #000;
+    }
 
-    /* Blank screen until the bookmarklet unlocks the app */
-#passwordGate {
-    position: fixed;
-    inset: 0;
-    z-index: 9999;
-    display: block;
-    background: #000;
-}
-body.password-locked > .app,
-body.password-locked > .player {
-    visibility: hidden !important;
-    pointer-events: none !important;
-}
+    body.password-locked > .app,
+    body.password-locked > .player {
+        display: none !important;
+    }
+
 </style>
 </head>
 
 <body class="password-locked">
 
-<div id="passwordGate" aria-hidden="false"></div>
-    </div>
-</div>
-
+<div id="passwordGate"></div>
 
 <div class="app">
 
@@ -588,66 +586,140 @@ body.password-locked > .player {
 <script>
 
 
-/* Spotify Web Playback SDK is loaded only after bookmarklet unlock. */
-let spotifySDKPromise = null;
 
-function loadSpotifySDK() {
-    if (window.Spotify) return Promise.resolve();
-    if (spotifySDKPromise) return spotifySDKPromise;
+/*
+ * PRIVATE LAUNCH HANDSHAKE
+ * ------------------------
+ * There is deliberately no localStorage/sessionStorage unlock flag.
+ * Refreshing the page always returns to the blank screen.
+ *
+ * This is intentionally obfuscated to make casual inspection harder.
+ * It is NOT a cryptographic access-control system: anything delivered
+ * to a browser can ultimately be inspected or modified by that browser.
+ */
 
-    spotifySDKPromise = new Promise((resolve, reject) => {
-        window.onSpotifyWebPlaybackSDKReady = function () {
-            resolve();
-        };
+const _0xA = [117,110,108,111,99,107,95,120,55,51,49];
+const _0xB = [115,116,97,114,116,95,120,55,51,49];
+const _0xC = [83,80,45,76,65,85,78,67,72,45,55,51,49];
 
-        const script = document.createElement("script");
-        script.src = "https://sdk.scdn.co/spotify-player.js";
-        script.async = true;
-        script.onerror = () => {
-            spotifySDKPromise = null;
-            reject(new Error("Could not load the Spotify player."));
-        };
-        document.head.appendChild(script);
-    });
-
-    return spotifySDKPromise;
+function _0xD(a) {
+    return a.map(function(n) {
+        return String.fromCharCode(n);
+    }).join("");
 }
 
-/* Password gate
-   The password is stored as a SHA-256 hash rather than plaintext.
-   A new session is required every time the page is loaded.
-*/
-/* Bookmarklet-only unlock.
-   No password and no localStorage/sessionStorage unlock flag.
-   The bookmarklet must call unlockWithBookmarklet() on every page load.
-*/
-let bookmarkletUnlocked = false;
+function _0xE(s) {
+    let r = "";
+    for (let i = s.length - 1; i >= 0; i--) {
+        r += s.charCodeAt(i).toString(16).padStart(2, "0");
+    }
+    return r;
+}
 
-window.unlockWithBookmarklet = function () {
-    if (bookmarkletUnlocked) return;
+function _0xF() {
+    const seed = _0xD(_0xC);
+    const now = Date.now().toString(36);
+    return _0xE(seed + ":" + now);
+}
 
-    bookmarkletUnlocked = true;
+function _0xG(v) {
+    try {
+        const x = String(v || "");
+        const seed = _0xD(_0xC);
+        if (x.length < 4) return false;
+
+        let decoded = "";
+        for (let i = 0; i < x.length; i += 2) {
+            decoded += String.fromCharCode(parseInt(x.slice(i, i + 2), 16));
+        }
+
+        const pivot = decoded.indexOf(":");
+        return pivot > 0 &&
+               decoded.slice(0, pivot) === seed &&
+               decoded.slice(pivot + 1).length >= 4;
+    } catch (e) {
+        return false;
+    }
+}
+
+let _0xUnlocked = false;
+let _0xOpenedAt = 0;
+let _0xStarting = false;
+
+function _0xReveal() {
+    _0xUnlocked = true;
+    _0xOpenedAt = Date.now();
+
     document.body.classList.remove("password-locked");
 
     const gate = document.getElementById("passwordGate");
-    if (gate) {
-        gate.style.display = "none";
-        gate.setAttribute("aria-hidden", "true");
+    if (gate) gate.style.display = "none";
+
+    if (!_0xStarting) {
+        _0xStarting = true;
+
+        Promise.resolve(startApp())
+            .catch(function(error) {
+                console.error(error);
+                _0xUnlocked = false;
+                _0xOpenedAt = 0;
+                _0xStarting = false;
+
+                document.body.classList.add("password-locked");
+
+                const gate2 = document.getElementById("passwordGate");
+                if (gate2) gate2.style.display = "block";
+            });
     }
 
-    startApp();
+    return true;
+}
+
+/*
+ * The useful public property names are assembled at runtime instead of
+ * being written plainly as an obvious "unlock" API.
+ */
+window[_0xD(_0xA)] = function(packet) {
+    if (!_0xG(packet)) return false;
+    return _0xReveal();
 };
 
-function lockPlayer() {
-    bookmarkletUnlocked = false;
-    document.body.classList.add("password-locked");
+window[_0xD(_0xB)] = function() {
+    return _0xReveal();
+};
 
-    const gate = document.getElementById("passwordGate");
-    if (gate) {
-        gate.style.display = "block";
-        gate.setAttribute("aria-hidden", "false");
+/*
+ * Bookmarklet-facing dispatcher.
+ * The bookmarklet can locate this without exposing the obvious launch
+ * function name in a readable call.
+ */
+window["_p" + "7" + "3" + "_go"] = function() {
+    const packet = _0xF();
+    const fn = window[_0xD(_0xA)];
+    if (typeof fn !== "function") return false;
+    return fn(packet);
+};
+
+/* Automatic relock after 30 minutes, held only in RAM. */
+setInterval(function() {
+    if (_0xUnlocked && _0xOpenedAt &&
+        Date.now() - _0xOpenedAt > 30 * 60 * 1000) {
+
+        _0xUnlocked = false;
+        _0xOpenedAt = 0;
+        _0xStarting = false;
+
+        if (player) {
+            try { player.disconnect(); } catch (e) {}
+            player = null;
+        }
+
+        document.body.classList.add("password-locked");
+
+        const gate = document.getElementById("passwordGate");
+        if (gate) gate.style.display = "block";
     }
-}
+}, 15000);
 
 /* important */
 
@@ -2352,13 +2424,8 @@ $("search").addEventListener(
 /* START */
 
 async function startApp() {
-    if (!bookmarkletUnlocked) {
-        lockPlayer();
-        return;
-    }
-
+    if (!_0xUnlocked) return;
     try {
-        await loadSpotifySDK();
 
         const callback =
             await handleCallback();
@@ -2431,9 +2498,19 @@ async function startApp() {
     }
 }
 
-// Always start locked. The bookmarklet must unlock the page every time.
-lockPlayer();
+
+
+/* Always locked on a fresh page load. No persistent unlock state exists. */
+document.body.classList.add("password-locked");
+const _initialGate = document.getElementById("passwordGate");
+if (_initialGate) _initialGate.style.display = "block";
+
 </script>
 
+
+<!-- OWNER BOOKMARKLET (copy into a bookmark URL):
+javascript:(()=>{const a=[95,112,55,51,95,103,111];const b=a.map(c=>String.fromCharCode(c)).join('');const q=['_','p','7','3','_','g','o'];const n=q.join('');const w=window;const f=w[n]||w[b];if(typeof f==='function'){let z='';for(let i=0;i<17;i++){z+=String.fromCharCode(97+((i*19+7)%26));}void z;f();}})()
+-->
 </body>
+
 </html>
