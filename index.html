@@ -647,90 +647,16 @@ let _0xOpenedAt = 0;
 let _0xStarting = false;
 
 /* Bookmarklet entry point.
-   This is intentionally in-memory only: refreshing the page locks it again. */
-window["_p73_go"] = function() {
+   The bookmarklet only dispatches a DOM event. This avoids relying on
+   dynamically-created window property names, which can be unreliable in
+   some local-file/browser contexts. */
+function _0xBookmarkletUnlock() {
     return _0xReveal();
-};
-
-function _0xLoadSDK() {
-    if (window.Spotify) return Promise.resolve();
-
-    return new Promise(function(resolve, reject) {
-        const existing = document.querySelector('script[data-spotify-sdk="1"]');
-        if (existing) {
-            existing.addEventListener("load", resolve, { once: true });
-            existing.addEventListener("error", reject, { once: true });
-            return;
-        }
-
-        const script = document.createElement("script");
-        script.src = "https://sdk.scdn.co/spotify-player.js";
-        script.async = true;
-        script.dataset.spotifySdk = "1";
-        script.onload = resolve;
-        script.onerror = function() {
-            reject(new Error("Could not load the Spotify Web Playback SDK."));
-        };
-        document.head.appendChild(script);
-    });
 }
 
-function _0xReveal() {
-    _0xUnlocked = true;
-    _0xOpenedAt = Date.now();
-
-    document.body.classList.remove("password-locked");
-
-    const gate = document.getElementById("passwordGate");
-    if (gate) gate.style.display = "none";
-
-    if (!_0xStarting) {
-        _0xStarting = true;
-
-        _0xLoadSDK()
-            .then(function() {
-                return startApp();
-            })
-            .catch(function(error) {
-                console.error(error);
-                _0xUnlocked = false;
-                _0xOpenedAt = 0;
-                _0xStarting = false;
-
-                document.body.classList.add("password-locked");
-
-                const gate2 = document.getElementById("passwordGate");
-                if (gate2) gate2.style.display = "block";
-            });
-    }
-
-    return true;
-}
-
-/*
- * The useful public property names are assembled at runtime instead of
- * being written plainly as an obvious "unlock" API.
- */
-window[_0xD(_0xA)] = function(packet) {
-    if (!_0xG(packet)) return false;
-    return _0xReveal();
-};
-
-window[_0xD(_0xB)] = function() {
-    return _0xReveal();
-};
-
-/*
- * Bookmarklet-facing dispatcher.
- * The bookmarklet can locate this without exposing the obvious launch
- * function name in a readable call.
- */
-window["_p" + "7" + "3" + "_go"] = function() {
-    const packet = _0xF();
-    const fn = window[_0xD(_0xA)];
-    if (typeof fn !== "function") return false;
-    return fn(packet);
-};
+document.addEventListener("spotify-clone-unlock", function() {
+    _0xBookmarkletUnlock();
+});
 
 /* Automatic relock after 30 minutes, held only in RAM. */
 setInterval(function() {
@@ -2541,5 +2467,5 @@ if (_initialGate) _initialGate.style.display = "block";
 
 
 <!-- OWNER BOOKMARKLET:
-javascript:(()=>{const w=window;const f=w['_p73_go'];if(typeof f==='function')f();})()
+javascript:(()=>{document.dispatchEvent(new Event('spotify-clone-unlock'));void 0})()
 -->
