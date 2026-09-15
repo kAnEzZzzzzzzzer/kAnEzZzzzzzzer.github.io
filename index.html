@@ -475,7 +475,22 @@ h2 {
         font-size: 14px;
     }
     body.password-locked > .app,
-    body.password-locked > .player { display: none !important; }
+    body.password-locked > .player {
+        display: none !important;
+        visibility: hidden !important;
+        pointer-events: none !important;
+    }
+
+    body.password-locked #passwordGate {
+        display: flex !important;
+        visibility: visible !important;
+        pointer-events: auto !important;
+    }
+
+    #passwordSubmit:disabled {
+        opacity: .65;
+        cursor: wait;
+    }
 
 </style>
 </head>
@@ -642,6 +657,11 @@ const PLAYER_PASSWORD_HASH =
     "0e895c323cc786e17547125a4548680990d22ee9459561804dfc6f413d30618a";
 
 const PASSWORD_STORAGE_KEY = "spotify_clone_password_unlocked";
+const PASSWORD_SESSION_KEY = "spotify_clone_password_session";
+const PASSWORD_SESSION_TTL = 30 * 60 * 1000; // 30 minutes
+
+let passwordUnlocked = false;
+let passwordStarting = false;
 
 async function hashPassword(value) {
     const data = new TextEncoder().encode(value);
@@ -651,20 +671,96 @@ async function hashPassword(value) {
         .join("");
 }
 
-async function unlockPlayer() {
-    const input = $("playerPassword").value;
-    const hash = await hashPassword(input);
+function constantTimeEqual(a, b) {
+    if (typeof a !== "string" || typeof b !== "string" || a.length !== b.length) {
+        return false;
+    }
 
-    if (hash === PLAYER_PASSWORD_HASH) {
-        localStorage.setItem(PASSWORD_STORAGE_KEY, "true");
+    let result = 0;
+    for (let i = 0; i < a.length; i++) {
+        result |= a.charCodeAt(i) ^ b.charCodeAt(i);
+    }
+    return result === 0;
+}
+
+function validPasswordSession() {
+    const stored = sessionStorage.getItem(PASSWORD_SESSION_KEY);
+    if (!stored) return false;
+
+    try {
+        const session = JSON.parse(stored);
+        return (
+            session &&
+            session.ok === true &&
+            Number.isFinite(session.expires) &&
+            Date.now() < session.expires
+        );
+    } catch {
+        sessionStorage.removeItem(PASSWORD_SESSION_KEY);
+        return false;
+    }
+}
+
+function setPasswordSession() {
+    sessionStorage.setItem(
+        PASSWORD_SESSION_KEY,
+        JSON.stringify({
+            ok: true,
+            expires: Date.now() + PASSWORD_SESSION_TTL
+        })
+    );
+}
+
+function lockPlayer() {
+    passwordUnlocked = false;
+    document.body.classList.add("password-locked");
+    $("passwordGate").style.display = "flex";
+
+    if (player) {
+        try { player.disconnect(); } catch {}
+        player = null;
+        deviceId = null;
+        playerReady = false;
+    }
+}
+
+async function unlockPlayer() {
+    if (passwordStarting) return;
+
+    const input = $("playerPassword").value;
+    if (!input) {
+        $("passwordError").textContent = "Enter the password.";
+        return;
+    }
+
+    passwordStarting = true;
+    $("passwordSubmit").disabled = true;
+    $("passwordError").textContent = "Checking...";
+
+    try {
+        const hash = await hashPassword(input);
+
+        if (!constantTimeEqual(hash, PLAYER_PASSWORD_HASH)) {
+            $("passwordError").textContent = "Incorrect password.";
+            $("playerPassword").select();
+            return;
+        }
+
+        setPasswordSession();
         showPlayer();
-    } else {
-        $("passwordError").textContent = "Incorrect password.";
-        $("playerPassword").select();
+    } finally {
+        passwordStarting = false;
+        $("passwordSubmit").disabled = false;
     }
 }
 
 function showPlayer() {
+    if (!validPasswordSession()) {
+        lockPlayer();
+        return;
+    }
+
+    passwordUnlocked = true;
     document.body.classList.remove("password-locked");
     $("passwordGate").style.display = "none";
     $("playerPassword").value = "";
@@ -673,9 +769,23 @@ function showPlayer() {
 }
 
 $("passwordSubmit").addEventListener("click", unlockPlayer);
+
 $("playerPassword").addEventListener("keydown", event => {
     if (event.key === "Enter") unlockPlayer();
 });
+
+// Re-lock when the browser tab is restored after the session expires.
+setInterval(() => {
+    if (passwordUnlocked && !validPasswordSession()) {
+        sessionStorage.removeItem(PASSWORD_SESSION_KEY);
+        location.reload();
+    }
+}, 5000);
+
+// Do not trust a manually-added localStorage flag.
+// The previous implementation used localStorage alone, which could be
+// changed by the browser user. Authentication state is now session-scoped.
+sessionStorage.removeItem(PASSWORD_STORAGE_KEY);
 
 /* important */
 
@@ -2453,10 +2563,12 @@ async function startApp() {
     }
 }
 
-// Restore the password unlock only after all app variables and functions
-// have been initialized, so Spotify login can work normally.
-if (localStorage.getItem(PASSWORD_STORAGE_KEY) === "true") {
+// Only restore a valid, unexpired session. A localStorage value alone
+// is never accepted as proof of authentication.
+if (validPasswordSession()) {
     showPlayer();
+} else {
+    lockPlayer();
 }
 
 </script>
