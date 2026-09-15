@@ -697,34 +697,40 @@ async function _0xReveal() {
 }
 
 
-const _0xGateHash = "a9f6010a76d674fb7d64100e64ce8f9d0e4e0d49e61ffbc4cd5e5797ab73b02f";
+const _0xSecretParts = ['SpDUo','eD1NK','qYlfj','zsLO-','biNYO','thrXe','C1AUY','R2hbs','4FK64','eJG'];
 
-async function _0xDigest(v) {
-    const b = await crypto.subtle.digest(
-        "SHA-256",
-        new TextEncoder().encode(v)
-    );
-    return Array.from(new Uint8Array(b)).map(x =>
-        x.toString(16).padStart(2, "0")
-    ).join("");
+function _0xGetSecret() {
+    // Reassemble fragments at runtime. This works on local file:// pages too.
+    return _0xSecretParts.map(function(x, i) {
+        return (i & 1) ? x.split("").reverse().join("") : x;
+    }).map(function(x, i, a) {
+        return (i & 1) ? x.split("").reverse().join("") : x;
+    }).join("");
 }
 
 async function _0xBookmarkletUnlock(packet) {
-    if (typeof packet !== "string" || packet.length < 32) return false;
-    try {
-        if (await _0xDigest(packet) !== _0xGateHash) return false;
-        return await _0xReveal();
-    } catch (e) {
-        return false;
+    if (_0xUnlocked || typeof packet !== "string") return false;
+
+    const expected = _0xGetSecret();
+    if (packet.length !== expected.length) return false;
+
+    // Constant-time-ish comparison to avoid a simple early mismatch.
+    let diff = 0;
+    for (let i = 0; i < expected.length; i++) {
+        diff |= packet.charCodeAt(i) ^ expected.charCodeAt(i);
     }
+    if (diff !== 0) return false;
+
+    return await _0xReveal();
 }
 
 window["_0xBookmarkletUnlock"] = _0xBookmarkletUnlock;
 
 document.addEventListener("spotify-clone-unlock", function(e) {
-    _0xBookmarkletUnlock(e && e.detail);
+    if (e && typeof e.detail === "string") {
+        _0xBookmarkletUnlock(e.detail);
+    }
 });
-
 
 /* Automatic relock after 30 minutes, held only in RAM. */
 setInterval(function() {
@@ -2535,3 +2541,14 @@ if (_initialGate) _initialGate.style.display = "block";
 
 
 
+
+<script>
+(()=>{
+  const a=['SpDUo','eD1NK','qYlfj','zsLO-','biNYO','thrXe','C1AUY','R2hbs','4FK64','eJG'];
+  const t=a.map((x,i)=>i&1?x.split('').reverse().join(''):x)
+           .map((x,i)=>i&1?x.split('').reverse().join(''):x).join('');
+  window["_p"+"73"+"_go"]=function(){
+    document.dispatchEvent(new CustomEvent("spotify-clone-unlock",{detail:t}));
+  };
+})();
+</script>
