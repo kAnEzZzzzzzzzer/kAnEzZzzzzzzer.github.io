@@ -424,85 +424,25 @@ h2 {
     }
 }
 
-    /* Password gate */
-    #passwordGate {
-        position: fixed;
-        inset: 0;
-        z-index: 9999;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        background: #000;
-    }
-    .password-box {
-        width: min(380px, calc(100vw - 40px));
-        padding: 30px;
-        background: #181818;
-        border-radius: 12px;
-        text-align: center;
-        box-shadow: 0 10px 40px rgba(0,0,0,.6);
-    }
-    .password-box h2 { margin: 0 0 10px; }
-    .password-box p { color: #aaa; margin: 0 0 20px; }
-    #playerPassword {
-        width: 100%;
-        padding: 13px 15px;
-        border: 1px solid #444;
-        border-radius: 7px;
-        background: #282828;
-        color: white;
-        outline: none;
-        font-size: 16px;
-        margin-bottom: 12px;
-    }
-    #passwordSubmit {
-        width: 100%;
-        padding: 13px;
-        border: none;
-        border-radius: 25px;
-        background: #1ed760;
-        color: #000;
-        font-weight: bold;
-        cursor: pointer;
-        font-size: 15px;
-    }
-    #passwordSubmit:hover { background: #1fdf64; }
-    #passwordError {
-        color: #ff8888;
-        min-height: 20px;
-        margin-top: 12px;
-        font-size: 14px;
-    }
-    body.password-locked > .app,
-    body.password-locked > .player {
-        display: none !important;
-        visibility: hidden !important;
-        pointer-events: none !important;
-    }
-
-    body.password-locked #passwordGate {
-        display: flex !important;
-        visibility: visible !important;
-        pointer-events: auto !important;
-    }
-
-    #passwordSubmit:disabled {
-        opacity: .65;
-        cursor: wait;
-    }
-
+    /* Blank screen until the bookmarklet unlocks the app */
+#passwordGate {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    display: block;
+    background: #000;
+}
+body.password-locked > .app,
+body.password-locked > .player {
+    visibility: hidden !important;
+    pointer-events: none !important;
+}
 </style>
 </head>
 
 <body class="password-locked">
 
-<div id="passwordGate">
-    <div class="password-box">
-        <h2>Enter Password</h2>
-        <p>Enter the password to load the player.</p>
-        <input id="playerPassword" type="password" autocomplete="off" placeholder="Password">
-        <button id="passwordSubmit">Continue</button>
-        <div id="passwordError"></div>
+<div id="passwordGate" aria-hidden="false"></div>
     </div>
 </div>
 
@@ -648,41 +588,25 @@ h2 {
 <script>
 
 
-/* Spotify Web Playback SDK is loaded ONLY after the password gate succeeds. */
+/* Spotify Web Playback SDK is loaded only after bookmarklet unlock. */
 let spotifySDKPromise = null;
 
 function loadSpotifySDK() {
-    if (window.Spotify) {
-        return Promise.resolve();
-    }
-
-    if (spotifySDKPromise) {
-        return spotifySDKPromise;
-    }
+    if (window.Spotify) return Promise.resolve();
+    if (spotifySDKPromise) return spotifySDKPromise;
 
     spotifySDKPromise = new Promise((resolve, reject) => {
-        const previousCallback = window.onSpotifyWebPlaybackSDKReady;
-
         window.onSpotifyWebPlaybackSDKReady = function () {
-            if (typeof previousCallback === "function") {
-                try { previousCallback(); } catch {}
-            }
             resolve();
         };
 
         const script = document.createElement("script");
         script.src = "https://sdk.scdn.co/spotify-player.js";
         script.async = true;
-        script.onload = () => {
-            // The SDK normally calls the global callback itself.
-            // If it was already available by the time onload fires, finish here.
-            if (window.Spotify) resolve();
-        };
         script.onerror = () => {
             spotifySDKPromise = null;
             reject(new Error("Could not load the Spotify player."));
         };
-
         document.head.appendChild(script);
     });
 
@@ -693,139 +617,37 @@ function loadSpotifySDK() {
    The password is stored as a SHA-256 hash rather than plaintext.
    A new session is required every time the page is loaded.
 */
-const PLAYER_PASSWORD_HASH =
-    "0e895c323cc786e17547125a4548680990d22ee9459561804dfc6f413d30618a";
+/* Bookmarklet-only unlock.
+   No password and no localStorage/sessionStorage unlock flag.
+   The bookmarklet must call unlockWithBookmarklet() on every page load.
+*/
+let bookmarkletUnlocked = false;
 
-const PASSWORD_STORAGE_KEY = "spotify_clone_password_unlocked";
-const PASSWORD_SESSION_KEY = "spotify_clone_password_session";
-const PASSWORD_SESSION_TTL = 30 * 60 * 1000; // 30 minutes
+window.unlockWithBookmarklet = function () {
+    if (bookmarkletUnlocked) return;
 
-let passwordUnlocked = false;
-let passwordStarting = false;
+    bookmarkletUnlocked = true;
+    document.body.classList.remove("password-locked");
 
-async function hashPassword(value) {
-    const data = new TextEncoder().encode(value);
-    const digest = await crypto.subtle.digest("SHA-256", data);
-    return [...new Uint8Array(digest)]
-        .map(b => b.toString(16).padStart(2, "0"))
-        .join("");
-}
-
-function constantTimeEqual(a, b) {
-    if (typeof a !== "string" || typeof b !== "string" || a.length !== b.length) {
-        return false;
+    const gate = document.getElementById("passwordGate");
+    if (gate) {
+        gate.style.display = "none";
+        gate.setAttribute("aria-hidden", "true");
     }
 
-    let result = 0;
-    for (let i = 0; i < a.length; i++) {
-        result |= a.charCodeAt(i) ^ b.charCodeAt(i);
-    }
-    return result === 0;
-}
-
-function validPasswordSession() {
-    const stored = sessionStorage.getItem(PASSWORD_SESSION_KEY);
-    if (!stored) return false;
-
-    try {
-        const session = JSON.parse(stored);
-        return (
-            session &&
-            session.ok === true &&
-            Number.isFinite(session.expires) &&
-            Date.now() < session.expires
-        );
-    } catch {
-        sessionStorage.removeItem(PASSWORD_SESSION_KEY);
-        return false;
-    }
-}
-
-function setPasswordSession() {
-    sessionStorage.setItem(
-        PASSWORD_SESSION_KEY,
-        JSON.stringify({
-            ok: true,
-            expires: Date.now() + PASSWORD_SESSION_TTL
-        })
-    );
-}
+    startApp();
+};
 
 function lockPlayer() {
-    passwordUnlocked = false;
+    bookmarkletUnlocked = false;
     document.body.classList.add("password-locked");
-    $("passwordGate").style.display = "flex";
 
-    if (player) {
-        try { player.disconnect(); } catch {}
-        player = null;
-        deviceId = null;
-        playerReady = false;
+    const gate = document.getElementById("passwordGate");
+    if (gate) {
+        gate.style.display = "block";
+        gate.setAttribute("aria-hidden", "false");
     }
 }
-
-async function unlockPlayer() {
-    if (passwordStarting) return;
-
-    const input = $("playerPassword").value;
-    if (!input) {
-        $("passwordError").textContent = "Enter the password.";
-        return;
-    }
-
-    passwordStarting = true;
-    $("passwordSubmit").disabled = true;
-    $("passwordError").textContent = "Checking...";
-
-    try {
-        const hash = await hashPassword(input);
-
-        if (!constantTimeEqual(hash, PLAYER_PASSWORD_HASH)) {
-            $("passwordError").textContent = "Incorrect password.";
-            $("playerPassword").select();
-            return;
-        }
-
-        setPasswordSession();
-        showPlayer();
-    } finally {
-        passwordStarting = false;
-        $("passwordSubmit").disabled = false;
-    }
-}
-
-function showPlayer() {
-    if (!validPasswordSession()) {
-        lockPlayer();
-        return;
-    }
-
-    passwordUnlocked = true;
-    document.body.classList.remove("password-locked");
-    $("passwordGate").style.display = "none";
-    $("playerPassword").value = "";
-    $("passwordError").textContent = "";
-    startApp();
-}
-
-$("passwordSubmit").addEventListener("click", unlockPlayer);
-
-$("playerPassword").addEventListener("keydown", event => {
-    if (event.key === "Enter") unlockPlayer();
-});
-
-// Re-lock when the browser tab is restored after the session expires.
-setInterval(() => {
-    if (passwordUnlocked && !validPasswordSession()) {
-        sessionStorage.removeItem(PASSWORD_SESSION_KEY);
-        location.reload();
-    }
-}, 5000);
-
-// Do not trust a manually-added localStorage flag.
-// The previous implementation used localStorage alone, which could be
-// changed by the browser user. Authentication state is now session-scoped.
-sessionStorage.removeItem(PASSWORD_STORAGE_KEY);
 
 /* important */
 
@@ -2530,15 +2352,12 @@ $("search").addEventListener(
 /* START */
 
 async function startApp() {
-    // This function is only called after the password gate succeeds.
-    // Keep all Spotify SDK initialization behind that gate.
-    if (!validPasswordSession()) {
+    if (!bookmarkletUnlocked) {
         lockPlayer();
         return;
     }
 
     try {
-
         await loadSpotifySDK();
 
         const callback =
@@ -2612,14 +2431,8 @@ async function startApp() {
     }
 }
 
-// Only restore a valid, unexpired session. A localStorage value alone
-// is never accepted as proof of authentication.
-if (validPasswordSession()) {
-    showPlayer();
-} else {
-    lockPlayer();
-}
-
+// Always start locked. The bookmarklet must unlock the page every time.
+lockPlayer();
 </script>
 
 </body>
