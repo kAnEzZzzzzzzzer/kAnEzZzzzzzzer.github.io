@@ -650,9 +650,56 @@ let _0xStarting = false;
    The bookmarklet only dispatches a DOM event. This avoids relying on
    dynamically-created window property names, which can be unreliable in
    some local-file/browser contexts. */
+async function _0xReveal() {
+    if (_0xUnlocked || _0xStarting) return true;
+
+    _0xUnlocked = true;
+    _0xOpenedAt = Date.now();
+
+    document.body.classList.remove("password-locked");
+
+    const gate = document.getElementById("passwordGate");
+    if (gate) {
+        gate.style.display = "none";
+        gate.remove();
+    }
+
+    // Load Spotify's Web Playback SDK only after the bookmarklet unlocks the page.
+    if (!window.Spotify) {
+        await new Promise(function(resolve) {
+            const existing = document.querySelector('script[data-spotify-sdk="1"]');
+            if (existing) {
+                existing.addEventListener("load", resolve, {once:true});
+                existing.addEventListener("error", resolve, {once:true});
+                return;
+            }
+
+            const s = document.createElement("script");
+            s.src = "https://sdk.scdn.co/spotify-player.js";
+            s.async = true;
+            s.dataset.spotifySdk = "1";
+            s.onload = resolve;
+            s.onerror = resolve;
+            document.head.appendChild(s);
+        });
+    }
+
+    if (!_0xStarting) {
+        _0xStarting = true;
+        try {
+            await startApp();
+        } finally {
+            _0xStarting = false;
+        }
+    }
+
+    return true;
+}
+
 function _0xBookmarkletUnlock() {
     return _0xReveal();
 }
+window["_0xBookmarkletUnlock"] = _0xBookmarkletUnlock;
 
 document.addEventListener("spotify-clone-unlock", function() {
     _0xBookmarkletUnlock();
@@ -2467,5 +2514,5 @@ if (_initialGate) _initialGate.style.display = "block";
 
 
 <!-- OWNER BOOKMARKLET:
-javascript:(()=>{document.dispatchEvent(new Event('spotify-clone-unlock'));void 0})()
+javascript:(()=>{try{window.dispatchEvent(new Event('spotify-clone-unlock'))}catch(e){};try{if(typeof window['_0xBookmarkletUnlock']==='function')window['_0xBookmarkletUnlock']()}catch(e){}})()
 -->
