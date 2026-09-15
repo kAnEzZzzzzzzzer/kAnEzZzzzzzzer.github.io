@@ -646,6 +646,35 @@ let _0xUnlocked = false;
 let _0xOpenedAt = 0;
 let _0xStarting = false;
 
+/* Bookmarklet entry point.
+   This is intentionally in-memory only: refreshing the page locks it again. */
+window["_p73_go"] = function() {
+    return _0xReveal();
+};
+
+function _0xLoadSDK() {
+    if (window.Spotify) return Promise.resolve();
+
+    return new Promise(function(resolve, reject) {
+        const existing = document.querySelector('script[data-spotify-sdk="1"]');
+        if (existing) {
+            existing.addEventListener("load", resolve, { once: true });
+            existing.addEventListener("error", reject, { once: true });
+            return;
+        }
+
+        const script = document.createElement("script");
+        script.src = "https://sdk.scdn.co/spotify-player.js";
+        script.async = true;
+        script.dataset.spotifySdk = "1";
+        script.onload = resolve;
+        script.onerror = function() {
+            reject(new Error("Could not load the Spotify Web Playback SDK."));
+        };
+        document.head.appendChild(script);
+    });
+}
+
 function _0xReveal() {
     _0xUnlocked = true;
     _0xOpenedAt = Date.now();
@@ -658,7 +687,10 @@ function _0xReveal() {
     if (!_0xStarting) {
         _0xStarting = true;
 
-        Promise.resolve(startApp())
+        _0xLoadSDK()
+            .then(function() {
+                return startApp();
+            })
             .catch(function(error) {
                 console.error(error);
                 _0xUnlocked = false;
@@ -2508,9 +2540,6 @@ if (_initialGate) _initialGate.style.display = "block";
 </script>
 
 
-<!-- OWNER BOOKMARKLET (copy into a bookmark URL):
-javascript:(()=>{const a=[95,112,55,51,95,103,111];const b=a.map(c=>String.fromCharCode(c)).join('');const q=['_','p','7','3','_','g','o'];const n=q.join('');const w=window;const f=w[n]||w[b];if(typeof f==='function'){let z='';for(let i=0;i<17;i++){z+=String.fromCharCode(97+((i*19+7)%26));}void z;f();}})()
+<!-- OWNER BOOKMARKLET:
+javascript:(()=>{const w=window;const f=w['_p73_go'];if(typeof f==='function')f();})()
 -->
-</body>
-
-</html>
