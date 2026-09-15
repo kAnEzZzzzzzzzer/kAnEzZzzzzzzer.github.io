@@ -439,11 +439,52 @@ h2 {
     }
 
 </style>
+
+<style id="locked-error-style">
+html,body{margin:0!important;width:100%!important;height:100%!important;background:#0b0b0b!important}
+#passwordGate{
+  position:fixed!important;inset:0!important;z-index:2147483647!important;
+  display:flex!important;align-items:center!important;justify-content:center!important;
+  background:#0b0b0b!important;color:#d7d7d7!important;
+  font-family:Arial,Helvetica,sans-serif!important;
+}
+#passwordGate .fake-error{
+  width:min(760px,calc(100vw - 48px));box-sizing:border-box;
+  padding:28px 32px;border:1px solid #252525;background:#111;
+  box-shadow:0 8px 30px rgba(0,0,0,.35);
+}
+#passwordGate .fake-error h1{
+  margin:0 0 14px;font-size:22px;font-weight:500;color:#eee;
+}
+#passwordGate .fake-error p{
+  margin:8px 0;color:#aaa;font-size:14px;line-height:1.55;
+}
+#passwordGate .fake-error .code{
+  margin-top:18px;padding:12px 14px;background:#0a0a0a;
+  border:1px solid #202020;color:#777;font:12px/1.5 Consolas,monospace;
+  white-space:pre-wrap;
+}
+#passwordGate .fake-error .tiny{
+  margin-top:18px;color:#555;font-size:11px;
+}
+</style>
+
 </head>
 
 <body class="password-locked">
 
-<div id="passwordGate"></div>
+<div id="passwordGate">
+  <div class="fake-error">
+    <h1>Something went wrong</h1>
+    <p>The application failed to initialize.</p>
+    <p>Some required resources could not be loaded. Please refresh the page and try again.</p>
+    <div class="code">Error: Application initialization failed
+Status: 500
+Module: app-bootstrap
+Code: ERR_APP_INIT_FAILED</div>
+    <div class="tiny">If the problem persists, contact the site administrator.</div>
+  </div>
+</div>
 
 <div class="app">
 
