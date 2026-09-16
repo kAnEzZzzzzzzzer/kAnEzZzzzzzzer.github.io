@@ -305,90 +305,24 @@ h2 {
     background: rgba(255,255,255,.1);
 }
 
-/* Music Player */
-
-.player {
-    position: fixed;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    height: 82px;
-    background: #181818;
-    border-top: 1px solid #333;
-    display: flex;
-    align-items: center;
-    gap: 14px;
-    padding: 10px 18px;
-    z-index: 20;
-}
-
-.player img {
-    width: 55px;
-    height: 55px;
-    object-fit: cover;
-    border-radius: 5px;
-}
-
-.player-info {
-    min-width: 180px;
-    max-width: 250px;
-}
-
-.player-title {
-    font-weight: bold;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-.player-artist {
-    color: #aaa;
-    font-size: 13px;
-    margin-top: 5px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-.player-controls {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    margin-left: auto;
-}
-
-.control-button {
-    width: 38px;
-    height: 38px;
-    border: none;
-    border-radius: 50%;
-    background: transparent;
+.search-button.youtube-mode {
+    background: #ff3b3b;
     color: white;
-    cursor: pointer;
-    font-size: 18px;
 }
 
-.control-button:hover {
-    background: #333;
-}
-
-.play-control {
-    background: white;
-    color: black;
-}
-
-.play-control:hover {
-    background: #ddd;
-}
-
-.spotify-button {
-    background: #1ed760;
+.mode-toggle-button {
+    background: #d9d9d9;
     color: black;
     border: none;
-    padding: 10px 18px;
-    border-radius: 20px;
+    padding: 12px 20px;
+    border-radius: 25px;
     font-weight: bold;
     cursor: pointer;
+    white-space: nowrap;
+}
+
+.mode-toggle-button:hover {
+    background: #c2c2c2;
 }
 
 /* Mobile */
@@ -428,13 +362,6 @@ h2 {
         font-size: 40px;
     }
 
-    .player-info {
-        min-width: 100px;
-    }
-
-    .spotify-button {
-        display: none;
-    }
 }
     /* Blank launch gate */
     #passwordGate {
@@ -445,8 +372,7 @@ h2 {
         background: #000;
     }
 
-    body.password-locked > .app,
-    body.password-locked > .player {
+    body.password-locked > .app {
         display: none !important;
     }
 
@@ -502,7 +428,7 @@ Code: ERR_APP_INIT_FAILED</div>
 
     <aside class="sidebar">
 
-        <div class="logo">
+        <div id="sidebarLogo" class="logo">
                Spotify Clone
         </div>
 
@@ -510,15 +436,15 @@ Code: ERR_APP_INIT_FAILED</div>
               Home
         </button>
 
-        <button class="nav-button logged-in-nav" onclick="focusSearch()">
+        <button class="nav-button logged-in-nav spotify-only-nav" onclick="focusSearch()">
               Search
         </button>
 
-        <button class="nav-button logged-in-nav" onclick="loadPlaylists()">
+        <button class="nav-button logged-in-nav spotify-only-nav" onclick="loadPlaylists()">
               My Playlists
         </button>
 
-        <button class="nav-button logged-in-nav dj-nav" onclick="openDJX()">
+        <button class="nav-button logged-in-nav dj-nav spotify-only-nav" onclick="openDJX()">
               DJ X
         </button>
 
@@ -536,8 +462,9 @@ Code: ERR_APP_INIT_FAILED</div>
             >
 
             <button
+                id="searchButton"
                 class="search-button"
-                onclick="searchSpotify()"
+                onclick="handleSearchButton()"
             >
                 Search
             </button>
@@ -548,6 +475,15 @@ Code: ERR_APP_INIT_FAILED</div>
                 onclick="login()"
             >
                 Log in
+            </button>
+
+            <button
+                id="modeToggleButton"
+                class="mode-toggle-button"
+                onclick="enterYouTubeMode()"
+                title="Watch YouTube"
+            >
+                ▶ YouTube
             </button>
 
         </div>
@@ -567,71 +503,6 @@ Code: ERR_APP_INIT_FAILED</div>
         </div>
 
     </main>
-
-</div>
-
-
-<!-- Client player -->
-
-<div class="player">
-
-    <img id="playerImage" src="" alt="">
-
-    <div class="player-info">
-
-        <div
-            id="playerTitle"
-            class="player-title"
-        >
-            Nothing playing
-        </div>
-
-        <div
-            id="playerArtist"
-            class="player-artist"
-        >
-            Choose a song
-        </div>
-
-    </div>
-
-    <div class="player-controls">
-
-        <button
-            class="control-button"
-            onclick="previousTrack()"
-            title="Previous"
-        >
-            ⏮
-        </button>
-
-        <button
-            id="playButton"
-            class="control-button play-control"
-            onclick="togglePlayback()"
-            title="Play/Pause"
-        >
-            ▶
-        </button>
-
-        <button
-            class="control-button"
-            onclick="nextTrack()"
-            title="Next"
-        >
-            ⏭
-        </button>
-
-    </div>
-
-    <button
-        id="spotifyButton"
-        class="spotify-button"
-        style="display:none"
-        onclick="openSpotify()"
-    >
-        Open in Spotify
-    </button>
 
 </div>
 
@@ -841,9 +712,9 @@ let deviceId = null;
 
 let playerReady = false;
 
-let currentSpotifyURL = "";
-
 let djMode = false;
+
+let currentMode = "spotify";
 
 
 /* Helpers */
@@ -854,6 +725,11 @@ function $(id) {
 
 function updateLoggedInNavigation() {
     document.querySelectorAll('.logged-in-nav').forEach(button => {
+        const isSpotifyOnly = button.classList.contains('spotify-only-nav');
+        if (isSpotifyOnly && currentMode !== 'spotify') {
+            button.style.display = 'none';
+            return;
+        }
         button.style.display = accessToken ? 'block' : 'none';
     });
 }
@@ -1268,10 +1144,7 @@ window.onSpotifyWebPlaybackSDKReady =
                     return;
                 }
 
-                $("playerTitle").textContent =
-                    track.name || "Unknown track";
-
-                $("playerArtist").textContent =
+                const artists =
                     (track.artists || [])
                         .filter(Boolean)
                         .map(a => a?.name)
@@ -1279,28 +1152,12 @@ window.onSpotifyWebPlaybackSDKReady =
                         .join(", ") ||
                     "Unknown artist";
 
-                if (
-                    track.album?.images?.[0]?.url
-                ) {
-
-                    $("playerImage").src =
-                        track.album.images[0].url;
-
-                }
-
-                currentSpotifyURL =
-                    track.external_urls?.spotify ||
-                    "";
-
-                $("spotifyButton").style.display =
-                    currentSpotifyURL
-                        ? "block"
-                        : "none";
-
-                $("playButton").textContent =
-                    state.paused
-                        ? "▶"
-                        : "⏸";
+                status(
+                    (state.paused ? "Paused: " : "Now playing: ") +
+                    (track.name || "Unknown track") +
+                    " — " +
+                    artists
+                );
 
             }
         );
@@ -1388,13 +1245,7 @@ async function playTrack(track) {
             }
         );
 
-        $("playerImage").src =
-            image(track);
-
-        $("playerTitle").textContent =
-            track.name || "Unknown track";
-
-        $("playerArtist").textContent =
+        const artists =
             (track.artists || [])
                 .filter(Boolean)
                 .map(a => a?.name)
@@ -1402,13 +1253,12 @@ async function playTrack(track) {
                 .join(", ") ||
             "Unknown artist";
 
-        currentSpotifyURL =
-            spotifyURL(track);
-
-        $("spotifyButton").style.display =
-            currentSpotifyURL !== "#"
-                ? "block"
-                : "none";
+        status(
+            "Now playing: " +
+            (track.name || "Unknown track") +
+            " — " +
+            artists
+        );
 
     }
     catch (error) {
@@ -1503,13 +1353,6 @@ async function openDJX() {
         </div>
 
     `;
-
-    currentSpotifyURL =
-        "https://open.spotify.com/playlist/" +
-        DJ_X_PLAYLIST_ID;
-
-    $("spotifyButton").style.display =
-        "block";
 
     status(
         "DJ X is ready."
@@ -2320,14 +2163,6 @@ function openArtist(artist) {
 
     `;
 
-    currentSpotifyURL =
-        spotifyURL(artist);
-
-    $("spotifyButton").style.display =
-        currentSpotifyURL !== "#"
-            ? "block"
-            : "none";
-
     status(
         "Artist loaded."
     );
@@ -2457,6 +2292,21 @@ function home() {
 
     djMode = false;
 
+    if (currentMode === "youtube") {
+
+        $("heading").textContent =
+            "YouTube Clone";
+
+        $("results").innerHTML =
+            youtubeEmptyStateHTML();
+
+        status(
+            "Search YouTube videos above."
+        );
+
+        return;
+    }
+
     $("heading").textContent =
         "Spotify Clone";
 
@@ -2477,20 +2327,296 @@ function focusSearch() {
 }
 
 
-/* OPEN SPOTIFY */
+/* YOUTUBE */
 
-function openSpotify() {
+const YOUTUBE_API_KEY = "AIzaSyAQvWxtwizelBJze8uJsYi4q4Bj7lcTUIw";
 
-    if (currentSpotifyURL) {
+function extractYouTubeID(raw) {
 
-        window.open(
-            currentSpotifyURL,
-            "_blank"
-        );
+    if (!raw) {
+        return "";
+    }
 
+    const value = raw.trim();
+
+    if (/^[a-zA-Z0-9_-]{11}$/.test(value)) {
+        return value;
+    }
+
+    try {
+
+        const url = new URL(value);
+
+        if (url.hostname.includes("youtu.be")) {
+            return url.pathname.replace("/", "").slice(0, 11);
+        }
+
+        if (url.hostname.includes("youtube.com")) {
+
+            if (url.pathname.startsWith("/watch")) {
+                return url.searchParams.get("v") || "";
+            }
+
+            if (url.pathname.startsWith("/embed/")) {
+                return url.pathname.split("/embed/")[1]?.slice(0, 11) || "";
+            }
+
+            if (url.pathname.startsWith("/shorts/")) {
+                return url.pathname.split("/shorts/")[1]?.slice(0, 11) || "";
+            }
+
+        }
+
+    }
+    catch (e) {
+        // Not a valid URL, fall through and report failure below.
+    }
+
+    return "";
+}
+
+
+function youtubeEmptyStateHTML() {
+
+    return `
+        <div class="dj-page" style="text-align:center;">
+            <div style="font-size:50px; margin-bottom:15px;">▶</div>
+            <div class="dj-description" style="margin-bottom:0;">
+                Search for YouTube videos above, then click a result to play it here.
+            </div>
+        </div>
+    `;
+}
+
+
+/* Switches the whole app from the Spotify look to the same shell, reskinned as YouTube. */
+function enterYouTubeMode() {
+
+    currentMode = "youtube";
+
+    $("sidebarLogo").textContent =
+        "YouTube Clone";
+
+    $("heading").textContent =
+        "YouTube Clone";
+
+    $("search").placeholder =
+        "Search YouTube videos";
+
+    $("search").value =
+        "";
+
+    $("searchButton").textContent =
+        "Search";
+
+    $("searchButton").classList.add(
+        "youtube-mode"
+    );
+
+    $("loginButton").style.display =
+        "none";
+
+    $("modeToggleButton").textContent =
+        "Spotify";
+
+    $("modeToggleButton").onclick =
+        enterSpotifyMode;
+
+    $("modeToggleButton").title =
+        "Back to Spotify";
+
+    updateLoggedInNavigation();
+
+    $("results").innerHTML =
+        youtubeEmptyStateHTML();
+
+    status(
+        "Paste a YouTube link or video ID above and press Search."
+    );
+
+    $("search").focus();
+}
+
+
+/* Switches back to the normal Spotify clone. */
+function enterSpotifyMode() {
+
+    currentMode = "spotify";
+
+    $("sidebarLogo").textContent =
+        "Spotify Clone";
+
+    $("search").placeholder =
+        "What do you want to play?";
+
+    $("search").value =
+        "";
+
+    $("searchButton").classList.remove(
+        "youtube-mode"
+    );
+
+    $("loginButton").style.display =
+        "";
+
+    $("modeToggleButton").textContent =
+        "▶ YouTube";
+
+    $("modeToggleButton").onclick =
+        enterYouTubeMode;
+
+    $("modeToggleButton").title =
+        "Watch YouTube";
+
+    updateLoggedInNavigation();
+
+    home();
+}
+
+
+/* Search button now does different things depending on the current mode. */
+function handleSearchButton() {
+
+    if (currentMode === "youtube") {
+        playYouTube();
+        return;
+    }
+
+    searchSpotify();
+}
+
+
+async function searchYouTubeVideos(query) {
+    const results = $("results");
+    if (!results) return;
+
+    results.innerHTML = `
+        <div style="text-align:center; padding:30px; opacity:.75;">
+            Searching YouTube...
+        </div>
+    `;
+
+    try {
+        const url = new URL("https://www.googleapis.com/youtube/v3/search");
+        url.searchParams.set("part", "snippet");
+        url.searchParams.set("type", "video");
+        url.searchParams.set("maxResults", "24");
+        url.searchParams.set("q", query);
+        url.searchParams.set("key", YOUTUBE_API_KEY);
+
+        const response = await fetch(url.toString());
+        const data = await response.json();
+
+        if (!response.ok) {
+            throw new Error(data?.error?.message || "YouTube API request failed.");
+        }
+
+        const items = Array.isArray(data.items) ? data.items : [];
+
+        if (!items.length) {
+            results.innerHTML = `
+                <div class="dj-page" style="text-align:center;">
+                    <div class="dj-description">No YouTube videos found. Try another search.</div>
+                </div>
+            `;
+            return;
+        }
+
+        const grid = document.createElement("div");
+        grid.className = "grid";
+
+        items.forEach(item => {
+            const videoId = item?.id?.videoId;
+            const snippet = item?.snippet;
+            if (!videoId || !snippet) return;
+
+            const card = document.createElement("div");
+            card.className = "card";
+            card.style.cursor = "pointer";
+
+            const img = document.createElement("img");
+            img.src = snippet.thumbnails?.high?.url || snippet.thumbnails?.medium?.url || snippet.thumbnails?.default?.url || "";
+            img.alt = "";
+            img.loading = "lazy";
+
+            const title = document.createElement("div");
+            title.className = "card-title";
+            title.textContent = snippet.title || "YouTube video";
+
+            const subtitle = document.createElement("div");
+            subtitle.className = "card-subtitle";
+            subtitle.textContent = snippet.channelTitle || "";
+
+            card.appendChild(img);
+            card.appendChild(title);
+            card.appendChild(subtitle);
+
+            card.addEventListener("click", () => {
+                playYouTubeVideo(videoId, snippet.title || "YouTube video");
+            });
+
+            grid.appendChild(card);
+        });
+
+        results.innerHTML = "";
+        results.appendChild(grid);
+        status(`Showing YouTube results for “${query}”.`);
+    } catch (error) {
+        console.error(error);
+        results.innerHTML = `
+            <div class="dj-page" style="text-align:center;">
+                <div style="font-size:28px; margin-bottom:10px;">⚠</div>
+                <div class="dj-description">YouTube search failed: ${escapeHTML(error.message || "Unknown error")}</div>
+            </div>
+        `;
+        status("YouTube search failed.", true);
     }
 }
 
+function playYouTubeVideo(id, title) {
+    const results = $("results");
+    if (!results) return;
+
+    results.innerHTML = `
+        <div style="position:relative; width:100%; max-width:900px; aspect-ratio:16/9; background:#000; border-radius:8px; overflow:hidden; margin:0 auto;">
+            <iframe
+                src="https://www.youtube-nocookie.com/embed/${encodeURIComponent(id)}?autoplay=1&rel=0"
+                style="position:absolute; top:0; left:0; width:100%; height:100%; border:0;"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                allowfullscreen
+                title="${escapeHTML(title)}"
+            ></iframe>
+        </div>
+        <div style="max-width:900px; margin:14px auto 0; font-size:18px; font-weight:700;">
+            ${escapeHTML(title)}
+        </div>
+    `;
+
+    status("Playing YouTube video.");
+}
+
+function escapeHTML(value) {
+    return String(value ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+}
+
+async function playYouTube() {
+    const raw = $("search")?.value?.trim() || "";
+    if (!raw) return;
+
+    // Preserve direct YouTube URL / video-ID playback.
+    const id = extractYouTubeID(raw);
+    if (id) {
+        playYouTubeVideo(id, "YouTube video");
+        return;
+    }
+
+    await searchYouTubeVideos(raw);
+}
 
 /* ENTER KEY */
 
@@ -2500,7 +2626,7 @@ $("search").addEventListener(
 
         if (event.key === "Enter") {
 
-            searchSpotify();
+            handleSearchButton();
 
         }
 
