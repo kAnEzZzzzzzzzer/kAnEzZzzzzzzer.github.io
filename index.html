@@ -5,6 +5,18 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Spotify by Kane</title>
 
+<script>
+/* Tab title protection. The title follows the lock state. */
+const APP_TITLE = "Spotify by Kane";
+const ERROR_TITLE = "Error 500";
+function enforceAppTitle() {
+    const expected = document.body && document.body.classList.contains("password-locked")
+        ? ERROR_TITLE
+        : APP_TITLE;
+    if (document.title !== expected) document.title = expected;
+}
+</script>
+
 
 
 <style>
@@ -698,6 +710,7 @@ async function _0xReveal() {
     _0xOpenedAt = Date.now();
 
     document.body.classList.remove("password-locked");
+    document.title = APP_TITLE;
 
     const gate = document.getElementById("passwordGate");
     if (gate) {
@@ -788,6 +801,7 @@ setInterval(function() {
         }
 
         document.body.classList.add("password-locked");
+        document.title = ERROR_TITLE;
 
         const gate = document.getElementById("passwordGate");
         if (gate) gate.style.display = "block";
@@ -2575,8 +2589,11 @@ async function startApp() {
 
 /* Always locked on a fresh page load. No persistent unlock state exists. */
 document.body.classList.add("password-locked");
+document.title = ERROR_TITLE;
 const _initialGate = document.getElementById("passwordGate");
 if (_initialGate) _initialGate.style.display = "block";
+enforceAppTitle();
+setInterval(enforceAppTitle, 250);
 
 </script>
 
