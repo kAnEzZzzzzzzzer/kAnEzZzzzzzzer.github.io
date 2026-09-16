@@ -450,29 +450,6 @@ h2 {
         display: none !important;
     }
 
-
-/* Circular top-right lock button */
-#lockButton {
-    position: fixed;
-    top: 16px;
-    right: 16px;
-    width: 44px;
-    height: 44px;
-    border: none;
-    border-radius: 50%;
-    background: #1ed760;
-    color: #000;
-    font-size: 20px;
-    font-weight: bold;
-    line-height: 44px;
-    padding: 0;
-    cursor: pointer;
-    z-index: 100;
-    display: none;
-}
-#lockButton:hover { transform: scale(1.08); }
-body:not(.password-locked) #lockButton { display: block; }
-body.password-locked #lockButton { display: none !important; }
 </style>
 
 <style id="locked-error-style">
@@ -520,8 +497,6 @@ Code: ERR_APP_INIT_FAILED</div>
     <div class="tiny">If the problem persists, contact the site administrator.</div>
   </div>
 </div>
-
-<button id="lockButton" type="button" onclick="_0xLock()" title="Lock screen" aria-label="Lock screen">X</button>
 
 <div class="app">
 
@@ -724,46 +699,6 @@ let _0xUnlocked = false;
 let _0xOpenedAt = 0;
 let _0xStarting = false;
 
-/* Lock the app back behind the Error 500 screen. */
-function _0xLock() {
-    if (!_0xUnlocked) return;
-
-    _0xUnlocked = false;
-    _0xOpenedAt = 0;
-    _0xStarting = false;
-
-    if (player) {
-        try { player.disconnect(); } catch (e) {}
-        player = null;
-    }
-    deviceId = null;
-    playerReady = false;
-
-    document.body.classList.add("password-locked");
-    document.title = ERROR_TITLE;
-
-    const gate = document.getElementById("passwordGate");
-    if (!gate) {
-        const newGate = document.createElement("div");
-        newGate.id = "passwordGate";
-        newGate.innerHTML = `
-          <div class="fake-error">
-            <h1>Something went wrong</h1>
-            <p>The application failed to initialize.</p>
-            <p>Some required resources could not be loaded. Please refresh the page and try again.</p>
-            <div class="code">Error: Application initialization failed
-Status: 500
-Module: app-bootstrap
-Code: ERR_APP_INIT_FAILED</div>
-            <div class="tiny">If the problem persists, contact the site administrator.</div>
-          </div>`;
-        document.body.appendChild(newGate);
-    } else {
-        gate.style.display = "flex";
-    }
-    enforceAppTitle();
-}
-
 /* Bookmarklet entry point.
    The bookmarklet only dispatches a DOM event. This avoids relying on
    dynamically-created window property names, which can be unreliable in
@@ -869,8 +804,7 @@ setInterval(function() {
         document.title = ERROR_TITLE;
 
         const gate = document.getElementById("passwordGate");
-        if (gate) gate.style.display = "flex";
-        else _0xLock();
+        if (gate) gate.style.display = "block";
     }
 }, 15000);
 
