@@ -314,7 +314,13 @@ h2 {
     color: white;
 }
 
-.mode-toggle-button {
+/* Mode dropdown (replaces old mode-toggle-button) */
+
+.mode-dropdown {
+    position: relative;
+}
+
+.mode-dropdown-button {
     background: white;
     color: black;
     border: none;
@@ -323,10 +329,65 @@ h2 {
     font-weight: bold;
     cursor: pointer;
     white-space: nowrap;
+    display: flex;
+    align-items: center;
+    gap: 6px;
 }
 
-.mode-toggle-button:hover {
-    background: white;
+.mode-dropdown-button:hover {
+    background: #eee;
+}
+
+.mode-dropdown-caret {
+    font-size: 10px;
+    line-height: 1;
+}
+
+.mode-dropdown-menu {
+    display: none;
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    background: #282828;
+    border-radius: 8px;
+    box-shadow: 0 8px 24px rgba(0,0,0,.5);
+    padding: 6px;
+    min-width: 170px;
+    z-index: 30;
+}
+
+.mode-dropdown-menu.open {
+    display: block;
+}
+
+.mode-dropdown-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    width: 100%;
+    padding: 10px 12px;
+    border: none;
+    background: transparent;
+    color: white;
+    text-align: left;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+.mode-dropdown-item:hover {
+    background: #3a3a3a;
+}
+
+.mode-dropdown-check {
+    color: #1ed760;
+    font-weight: bold;
+    visibility: hidden;
+}
+
+.mode-dropdown-item.active .mode-dropdown-check {
+    visibility: visible;
 }
 
 /* Shorts Feed */
@@ -643,14 +704,41 @@ Code: ERR_APP_INIT_FAILED</div>
                 Log in
             </button>
 
-            <button
-                id="modeToggleButton"
-                class="mode-toggle-button"
-                onclick="enterYouTubeMode()"
-                title="Watch YouTube"
-            >
-                YouTube
-            </button>
+            <div id="modeDropdown" class="mode-dropdown">
+
+                <button
+                    id="modeDropdownButton"
+                    class="mode-dropdown-button"
+                    onclick="toggleModeDropdown()"
+                    title="Switch mode"
+                >
+                    <span id="modeDropdownLabel">Spotify</span>
+                    <span class="mode-dropdown-caret">▼</span>
+                </button>
+
+                <div id="modeDropdownMenu" class="mode-dropdown-menu">
+
+                    <button
+                        id="modeOptionSpotify"
+                        class="mode-dropdown-item active"
+                        onclick="selectMode('spotify')"
+                    >
+                        <span>Spotify</span>
+                        <span class="mode-dropdown-check">✓</span>
+                    </button>
+
+                    <button
+                        id="modeOptionYoutube"
+                        class="mode-dropdown-item"
+                        onclick="selectMode('youtube')"
+                    >
+                        <span>YouTube</span>
+                        <span class="mode-dropdown-check">✓</span>
+                    </button>
+
+                </div>
+
+            </div>
 
         </div>
 
@@ -2716,6 +2804,61 @@ function setYoutubeTab(tab) {
 }
 
 
+/* Mode dropdown */
+
+function toggleModeDropdown() {
+
+    $("modeDropdownMenu").classList.toggle("open");
+}
+
+function closeModeDropdown() {
+
+    $("modeDropdownMenu").classList.remove("open");
+}
+
+function updateModeDropdownUI() {
+
+    $("modeDropdownLabel").textContent =
+        currentMode === "youtube" ? "YouTube" : "Spotify";
+
+    $("modeOptionSpotify").classList.toggle(
+        "active",
+        currentMode === "spotify"
+    );
+
+    $("modeOptionYoutube").classList.toggle(
+        "active",
+        currentMode === "youtube"
+    );
+}
+
+function selectMode(mode) {
+
+    closeModeDropdown();
+
+    if (mode === currentMode) {
+        return;
+    }
+
+    if (mode === "youtube") {
+        enterYouTubeMode();
+    }
+    else {
+        enterSpotifyMode();
+    }
+}
+
+document.addEventListener("click", function(event) {
+
+    const dropdown = $("modeDropdown");
+
+    if (dropdown && !dropdown.contains(event.target)) {
+        closeModeDropdown();
+    }
+
+});
+
+
 /* YouTube mode */
 function enterYouTubeMode() {
 
@@ -2758,14 +2901,7 @@ function enterYouTubeMode() {
     document.querySelector(".player").style.display =
         "none";
 
-    $("modeToggleButton").textContent =
-        "Spotify";
-
-    $("modeToggleButton").onclick =
-        enterSpotifyMode;
-
-    $("modeToggleButton").title =
-        "Back to Spotify";
+    updateModeDropdownUI();
 
     updateLoggedInNavigation();
 
@@ -2812,14 +2948,7 @@ function enterSpotifyMode() {
     document.querySelector(".player").style.display =
         "flex";
 
-    $("modeToggleButton").textContent =
-        "YouTube";
-
-    $("modeToggleButton").onclick =
-        enterYouTubeMode;
-
-    $("modeToggleButton").title =
-        "Watch YouTube";
+    updateModeDropdownUI();
 
     updateLoggedInNavigation();
 
