@@ -10,7 +10,7 @@
 const APP_TITLE = "Spotify by Kane";
 const ERROR_TITLE = "Error 500";
 function enforceAppTitle() {
-    const expected = document.body && document.body.classList.contains("password-locked")
+    const expected = document.body && document.body.classList.contains("boot-blocked")
         ? ERROR_TITLE
         : APP_TITLE;
     if (document.title !== expected) document.title = expected;
@@ -464,8 +464,8 @@ h2 {
     }
 
 }
-  
-    #passwordGate {
+    /* Boot gate */
+    #bootGate {
         position: fixed;
         inset: 0;
         z-index: 9999;
@@ -473,8 +473,8 @@ h2 {
         background: #000;
     }
 
-    body.password-locked > .app,
-    body.password-locked > .player {
+    body.boot-blocked > .app,
+    body.boot-blocked > .player {
         display: none !important;
     }
 
@@ -482,39 +482,39 @@ h2 {
 
 <style id="locked-error-style">
 html,body{margin:0!important;width:100%!important;height:100%!important;background:#0b0b0b!important}
-#passwordGate{
+#bootGate{
   position:fixed!important;inset:0!important;z-index:2147483647!important;
   display:flex!important;align-items:center!important;justify-content:center!important;
   background:#0b0b0b!important;color:#d7d7d7!important;
   font-family:Arial,Helvetica,sans-serif!important;
 }
-#passwordGate .fake-error{
+#bootGate .boot-error{
   width:min(760px,calc(100vw - 48px));box-sizing:border-box;
   padding:28px 32px;border:1px solid #252525;background:#111;
   box-shadow:0 8px 30px rgba(0,0,0,.35);
 }
-#passwordGate .fake-error h1{
+#bootGate .boot-error h1{
   margin:0 0 14px;font-size:22px;font-weight:500;color:#eee;
 }
-#passwordGate .fake-error p{
+#bootGate .boot-error p{
   margin:8px 0;color:#aaa;font-size:14px;line-height:1.55;
 }
-#passwordGate .fake-error .code{
+#bootGate .boot-error .code{
   margin-top:18px;padding:12px 14px;background:#0a0a0a;
   border:1px solid #202020;color:#777;font:12px/1.5 Consolas,monospace;
   white-space:pre-wrap;
 }
-#passwordGate .fake-error .tiny{
+#bootGate .boot-error .tiny{
   margin-top:18px;color:#555;font-size:11px;
 }
 </style>
 
 </head>
 
-<body class="password-locked">
+<body class="boot-blocked">
 
-<div id="passwordGate">
-  <div class="fake-error">
+<div id="bootGate">
+  <div class="boot-error">
     <h1>Something went wrong</h1>
     <p>The application failed to initialize.</p>
     <p>Some required resources could not be loaded. Please refresh the page and try again.</p>
@@ -735,10 +735,10 @@ async function _0xReveal() {
     _0xUnlocked = true;
     _0xOpenedAt = Date.now();
 
-    document.body.classList.remove("password-locked");
+    document.body.classList.remove("boot-blocked");
     document.title = APP_TITLE;
 
-    const gate = document.getElementById("passwordGate");
+    const gate = document.getElementById("bootGate");
     if (gate) {
         gate.style.display = "none";
         gate.remove();
@@ -823,10 +823,10 @@ setInterval(function() {
             player = null;
         }
 
-        document.body.classList.add("password-locked");
+        document.body.classList.add("boot-blocked");
         document.title = ERROR_TITLE;
 
-        const gate = document.getElementById("passwordGate");
+        const gate = document.getElementById("bootGate");
         if (gate) gate.style.display = "block";
     }
 }, 15000);
@@ -3060,9 +3060,9 @@ async function startApp() {
 
 
 /* Lock on load */
-document.body.classList.add("password-locked");
+document.body.classList.add("boot-blocked");
 document.title = ERROR_TITLE;
-const _initialGate = document.getElementById("passwordGate");
+const _initialGate = document.getElementById("bootGate");
 if (_initialGate) _initialGate.style.display = "block";
 enforceAppTitle();
 setInterval(enforceAppTitle, 250);
