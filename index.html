@@ -6,7 +6,7 @@
 <title>Spotify by Kane</title>
 
 <script>
-/* Tab title protection. The title follows the lock state. */
+
 const APP_TITLE = "Spotify by Kane";
 const ERROR_TITLE = "Error 500";
 function enforceAppTitle() {
@@ -37,7 +37,7 @@ body {
     min-height: 100vh;
 }
 
-/* Side bar */
+/* Sidebar */
 
 .sidebar {
     background: #000;
@@ -150,7 +150,7 @@ h2 {
     margin-top: 35px;
 }
 
-/* Card s */
+/* Cards */
 
 .grid {
     display: grid;
@@ -196,7 +196,7 @@ h2 {
     text-overflow: ellipsis;
 }
 
-/* All the track thingys */
+/* Track rows */
 
 .track {
     display: grid;
@@ -232,7 +232,7 @@ h2 {
     transform: scale(1.05);
 }
 
-/* Current status */
+/* Status message */
 
 .status {
     color: #aaa;
@@ -246,7 +246,7 @@ h2 {
     border-radius: 8px;
 }
 
-/* hero */
+/* Hero */
 
 .hero {
     display: flex;
@@ -262,7 +262,7 @@ h2 {
     border-radius: 8px;
 }
 
-/* DJ X w.i.p. */
+/* DJ X */
 
 .dj-page {
     background: rgba(255,255,255,.07);
@@ -329,7 +329,7 @@ h2 {
     background: white;
 }
 
-/* Music Player */
+/* Currently Playing Bar */
 
 .player {
     position: fixed;
@@ -464,7 +464,7 @@ h2 {
     }
 
 }
-    /* Blank launch gate */
+  
     #passwordGate {
         position: fixed;
         inset: 0;
@@ -609,7 +609,7 @@ Code: ERR_APP_INIT_FAILED</div>
 </div>
 
 
-<!-- Client player -->
+<!-- Currently Playing Bar -->
 
 <div class="player">
 
@@ -678,16 +678,7 @@ Code: ERR_APP_INIT_FAILED</div>
 
 
 
-/*
- * PRIVATE LAUNCH HANDSHAKE
- * ------------------------
- * There is deliberately no localStorage/sessionStorage unlock flag.
- * Refreshing the page always returns to the blank screen.
- *
- * This is intentionally obfuscated to make casual inspection harder.
- * It is NOT a cryptographic access-control system: anything delivered
- * to a browser can ultimately be inspected or modified by that browser.
- */
+/* Launch gate unlock */
 
 const _0xA = [117,110,108,111,99,107,95,120,55,51,49];
 const _0xB = [115,116,97,114,116,95,120,55,51,49];
@@ -737,10 +728,7 @@ let _0xUnlocked = false;
 let _0xOpenedAt = 0;
 let _0xStarting = false;
 
-/* Bookmarklet entry point.
-   The bookmarklet only dispatches a DOM event. This avoids relying on
-   dynamically-created window property names, which can be unreliable in
-   some local-file/browser contexts. */
+/* Bookmarklet entry point */
 async function _0xReveal() {
     if (_0xUnlocked || _0xStarting) return true;
 
@@ -756,7 +744,6 @@ async function _0xReveal() {
         gate.remove();
     }
 
-    // Load Spotify's Web Playback SDK only after the bookmarklet unlocks the page.
     if (!window.Spotify) {
         await new Promise(function(resolve) {
             const existing = document.querySelector('script[data-spotify-sdk="1"]');
@@ -792,7 +779,6 @@ async function _0xReveal() {
 const _0xSecretParts = ['SpDUo','eD1NK','qYlfj','zsLO-','biNYO','thrXe','C1AUY','R2hbs','4FK64','eJG'];
 
 function _0xGetSecret() {
-    // Reassemble fragments at runtime. This works on local file:// pages too.
     return _0xSecretParts.map(function(x, i) {
         return (i & 1) ? x.split("").reverse().join("") : x;
     }).map(function(x, i, a) {
@@ -806,7 +792,6 @@ async function _0xBookmarkletUnlock(packet) {
     const expected = _0xGetSecret();
     if (packet.length !== expected.length) return false;
 
-    // Constant-time-ish comparison to avoid a simple early mismatch.
     let diff = 0;
     for (let i = 0; i < expected.length; i++) {
         diff |= packet.charCodeAt(i) ^ expected.charCodeAt(i);
@@ -824,7 +809,7 @@ document.addEventListener("spotify-clone-unlock", function(e) {
     }
 });
 
-/* Automatic relock after 30 minutes, held only in RAM. */
+/* Auto relock */
 setInterval(function() {
     if (_0xUnlocked && _0xOpenedAt &&
         Date.now() - _0xOpenedAt > 30 * 60 * 1000) {
@@ -846,7 +831,7 @@ setInterval(function() {
     }
 }, 15000);
 
-/* important */
+/* Spotify config */
 
 const CLIENT_ID =
     "b70e6ed30b444ef3859d594d418c2aa1";
@@ -857,7 +842,7 @@ const REDIRECT_URI =
 const DJ_X_PLAYLIST_ID =
     "37i9dQZF1EYkqdzj48dyYq";
 
-/* Restricted (by HTTP referrer) to this site in Google Cloud Console. */
+/* YouTube config */
 const YOUTUBE_API_KEY =
     "AIzaSyAQvWxtwizelBJze8uJsYi4q4Bj7lcTUIw";
 
@@ -1008,7 +993,7 @@ async function sha256Base64URL(value) {
 }
 
 
-/* log in */
+/* Log in */
 
 async function login() {
 
@@ -1060,7 +1045,7 @@ async function login() {
 }
 
 
-/* call back */
+/* Login callback */
 
 async function handleCallback() {
 
@@ -1177,7 +1162,7 @@ async function handleCallback() {
 }
 
 
-/* spotfiy api */
+/* Spotify API */
 
 async function spotifyAPI(
     endpoint,
@@ -1418,7 +1403,7 @@ window.onSpotifyWebPlaybackSDKReady =
     };
 
 
-/* play track */
+/* Play track */
 
 async function playTrack(track) {
 
@@ -1551,7 +1536,7 @@ async function playPlaylist(id) {
 }
 
 
-/* Dj X */
+/* DJ X */
 
 async function openDJX() {
 
@@ -1841,7 +1826,7 @@ async function searchSpotify() {
 
 
 
- /* SEARCH RESULTS */
+/* Search results */
    
 
 function renderSearch(data) {
@@ -1881,10 +1866,6 @@ function renderSearch(data) {
         of sections
     ) {
 
-        /* notes:
-         * Spotify can sometimes return null entries.
-         * Remove them before trying to read properties.
-         */
         const items =
             Array.isArray(rawItems)
                 ? rawItems.filter(item => item != null)
@@ -1953,12 +1934,6 @@ function renderSearch(data) {
             }
 
             else if (type === "playlist") {
-
-                /*
-                 * FIX:
-                 * Use item?.owner instead of assuming
-                 * owner always exists.
-                 */
 
                 const ownerName =
                     item?.owner?.display_name ||
@@ -2035,7 +2010,7 @@ function renderSearch(data) {
 }
 
 
-/* OPEN RESULT */
+/* Open result */
 
 async function openItem(type, id) {
 
@@ -2268,7 +2243,7 @@ function trackRow(track) {
 }
 
 
-/* ALBUM */
+/* Album */
 
 function openAlbum(album) {
 
@@ -2351,7 +2326,7 @@ function openAlbum(album) {
 }
 
 
-/* ARTIST */
+/* Artist */
 
 function openArtist(artist) {
 
@@ -2413,7 +2388,7 @@ function openArtist(artist) {
 }
 
 
-/* MY PLAYLISTS */
+/* My playlists */
 
 async function loadPlaylists() {
 
@@ -2530,7 +2505,7 @@ async function loadPlaylists() {
 }
 
 
-/* HOME */
+/* Home */
 
 function home() {
 
@@ -2571,7 +2546,7 @@ function focusSearch() {
 }
 
 
-/* YOUTUBE */
+/* YouTube */
 
 function extractYouTubeID(raw) {
 
@@ -2611,7 +2586,6 @@ function extractYouTubeID(raw) {
 
     }
     catch (e) {
-        // Not a valid URL, fall through and report failure below.
     }
 
     return "";
@@ -2631,7 +2605,7 @@ function youtubeEmptyStateHTML() {
 }
 
 
-/* Switches the whole app from the Spotify look to the same shell, reskinned as YouTube. */
+/* YouTube mode */
 function enterYouTubeMode() {
 
     currentMode = "youtube";
@@ -2642,7 +2616,6 @@ function enterYouTubeMode() {
             player.pause();
         }
         catch (e) {
-            // ignore - nothing was playing or player wasn't ready
         }
 
     }
@@ -2694,7 +2667,7 @@ function enterYouTubeMode() {
 }
 
 
-/* Switches back to the normal Spotify clone. */
+/* Spotify mode */
 function enterSpotifyMode() {
 
     currentMode = "spotify";
@@ -2733,7 +2706,7 @@ function enterSpotifyMode() {
 }
 
 
-/* Search button now does different things depending on the current mode. */
+/* Search button */
 function handleSearchButton() {
 
     if (currentMode === "youtube") {
@@ -2976,7 +2949,7 @@ function playYouTubeVideo(id) {
 }
 
 
-/* OPEN SPOTIFY */
+/* Open Spotify */
 
 function openSpotify() {
 
@@ -2991,7 +2964,7 @@ function openSpotify() {
 }
 
 
-/* ENTER KEY */
+/* Enter key */
 
 $("search").addEventListener(
     "keydown",
@@ -3007,7 +2980,7 @@ $("search").addEventListener(
 );
 
 
-/* START */
+/* Start */
 
 async function startApp() {
     if (!_0xUnlocked) return;
@@ -3086,7 +3059,7 @@ async function startApp() {
 
 
 
-/* Always locked on a fresh page load. No persistent unlock state exists. */
+/* Lock on load */
 document.body.classList.add("password-locked");
 document.title = ERROR_TITLE;
 const _initialGate = document.getElementById("passwordGate");
