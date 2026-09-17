@@ -6,7 +6,7 @@
 <title>Spotify by Kane</title>
 
 <script>
-
+/* Tab title */
 const APP_TITLE = "Spotify by Kane";
 const ERROR_TITLE = "Error 500";
 function enforceAppTitle() {
@@ -329,6 +329,62 @@ h2 {
     background: white;
 }
 
+/* Shorts Feed */
+
+.shorts-feed {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 24px;
+    max-height: 75vh;
+    overflow-y: auto;
+    scroll-snap-type: y mandatory;
+    padding: 10px 0 20px;
+}
+
+.shorts-item {
+    position: relative;
+    scroll-snap-align: center;
+    flex-shrink: 0;
+    width: 260px;
+    aspect-ratio: 9/16;
+    background: #000;
+    border-radius: 14px;
+    overflow: hidden;
+    cursor: pointer;
+}
+
+.shorts-item img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.shorts-item iframe {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    border: 0;
+}
+
+.shorts-caption {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: 10px;
+    background: linear-gradient(transparent, rgba(0,0,0,.85));
+    color: white;
+    font-size: 13px;
+    pointer-events: none;
+}
+
+.shorts-caption .card-subtitle {
+    margin-top: 2px;
+}
+
 /* Currently Playing Bar */
 
 .player {
@@ -548,6 +604,14 @@ Code: ERR_APP_INIT_FAILED</div>
 
         <button class="nav-button logged-in-nav dj-nav spotify-only-nav" onclick="openDJX()">
               DJ X
+        </button>
+
+        <button id="longFormTabButton" class="nav-button youtube-only-nav youtube-tab-nav active" onclick="setYoutubeTab('long')">
+              Long Form
+        </button>
+
+        <button id="shortsTabButton" class="nav-button youtube-only-nav youtube-tab-nav" onclick="setYoutubeTab('short')">
+              Shorts
         </button>
 
     </aside>
@@ -871,6 +935,8 @@ let playerReady = false;
 let djMode = false;
 
 let currentMode = "spotify";
+
+let currentYoutubeTab = "long";
 
 let currentSpotifyURL = "";
 
@@ -2594,14 +2660,59 @@ function extractYouTubeID(raw) {
 
 function youtubeEmptyStateHTML() {
 
+    const message =
+        currentYoutubeTab === "short"
+            ? "Search for a Short by name, then press Search, and scroll through the results."
+            : "Search for a video by name, or paste a YouTube link or video ID, then press Search.";
+
     return `
         <div class="dj-page" style="text-align:center;">
             <div style="font-size:50px; margin-bottom:15px;">▶</div>
             <div class="dj-description" style="margin-bottom:0;">
-                Search for a video by name, or paste a YouTube link or video ID, then press Search.
+                ${escapeHTML(message)}
             </div>
         </div>
     `;
+}
+
+
+/* Long Form / Shorts tabs */
+function setYoutubeTab(tab) {
+
+    currentYoutubeTab =
+        tab;
+
+    $("longFormTabButton").classList.toggle(
+        "active",
+        tab === "long"
+    );
+
+    $("shortsTabButton").classList.toggle(
+        "active",
+        tab === "short"
+    );
+
+    $("search").placeholder =
+        tab === "short"
+            ? "Search for a Short"
+            : "Search YouTube or paste a link";
+
+    $("search").value =
+        "";
+
+    $("heading").textContent =
+        "YouTube Clone";
+
+    $("results").innerHTML =
+        youtubeEmptyStateHTML();
+
+    status(
+        tab === "short"
+            ? "Search for a Short and scroll through the results."
+            : "Search for a video by name, or paste a YouTube link."
+    );
+
+    $("search").focus();
 }
 
 
@@ -2609,6 +2720,8 @@ function youtubeEmptyStateHTML() {
 function enterYouTubeMode() {
 
     currentMode = "youtube";
+
+    currentYoutubeTab = "long";
 
     if (player) {
 
@@ -2655,6 +2768,14 @@ function enterYouTubeMode() {
         "Back to Spotify";
 
     updateLoggedInNavigation();
+
+    $("longFormTabButton").classList.add(
+        "active"
+    );
+
+    $("shortsTabButton").classList.remove(
+        "active"
+    );
 
     $("results").innerHTML =
         youtubeEmptyStateHTML();
@@ -2740,18 +2861,48 @@ function handleSearchButton() {
 }
 
 
+/* Turns an ISO 8601 duration (e.g. "PT1M30S") into whole seconds. */
+function parseISO8601DurationToSeconds(duration) {
+
+    const match =
+        /^PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?$/.exec(
+            duration || ""
+        );
+
+    if (!match) {
+        return 0;
+    }
+
+    const hours =
+        parseInt(match[1] || "0", 10);
+
+    const minutes =
+        parseInt(match[2] || "0", 10);
+
+    const seconds =
+        parseInt(match[3] || "0", 10);
+
+    return (hours * 3600) + (minutes * 60) + seconds;
+}
+
+
 async function searchYouTube(query) {
+
+    const tab =
+        currentYoutubeTab;
 
     status(
         "Searching YouTube..."
     );
 
     $("heading").textContent =
-        'YouTube search: "' + query + '"';
+        'YouTube search' +
+        (tab === "short" ? " (Shorts)" : "") +
+        ': "' + query + '"';
 
     try {
 
-        const response =
+        const searchResponse =
             await fetch(
                 "https://www.googleapis.com/youtube/v3/search?" +
                 new URLSearchParams({
@@ -2766,7 +2917,7 @@ async function searchYouTube(query) {
                         "video",
 
                     maxResults:
-                        "12",
+                        "25",
 
                     key:
                         YOUTUBE_API_KEY
@@ -2774,21 +2925,120 @@ async function searchYouTube(query) {
                 })
             );
 
-        const data =
-            await response.json();
+        const searchData =
+            await searchResponse.json();
 
-        if (!response.ok) {
+        if (!searchResponse.ok) {
 
             throw new Error(
-                data.error?.message ||
+                searchData.error?.message ||
                 "YouTube API error: " +
-                response.status
+                searchResponse.status
             );
         }
 
-        renderYouTubeSearch(
-            data.items || []
-        );
+        const items =
+            (searchData.items || [])
+                .filter(item => item?.id?.videoId);
+
+        if (!items.length) {
+
+            $("results").innerHTML =
+                "<div class='status'>No results found.</div>";
+
+            status(
+                "No results found."
+            );
+
+            return;
+        }
+
+        const ids =
+            items.map(item => item.id.videoId);
+
+        const detailsResponse =
+            await fetch(
+                "https://www.googleapis.com/youtube/v3/videos?" +
+                new URLSearchParams({
+
+                    part:
+                        "contentDetails,snippet",
+
+                    id:
+                        ids.join(","),
+
+                    key:
+                        YOUTUBE_API_KEY
+
+                })
+            );
+
+        const detailsData =
+            await detailsResponse.json();
+
+        if (!detailsResponse.ok) {
+
+            throw new Error(
+                detailsData.error?.message ||
+                "YouTube API error: " +
+                detailsResponse.status
+            );
+        }
+
+        const videos =
+            (detailsData.items || [])
+                .map(item => ({
+
+                    id:
+                        item.id,
+
+                    title:
+                        item.snippet?.title ||
+                        "Untitled video",
+
+                    channel:
+                        item.snippet?.channelTitle ||
+                        "",
+
+                    thumb:
+                        item.snippet?.thumbnails?.medium?.url ||
+                        item.snippet?.thumbnails?.default?.url ||
+                        "",
+
+                    seconds:
+                        parseISO8601DurationToSeconds(
+                            item.contentDetails?.duration
+                        )
+
+                }));
+
+        const filtered =
+            videos.filter(video =>
+                tab === "short"
+                    ? video.seconds > 0 && video.seconds <= 60
+                    : video.seconds > 60
+            );
+
+        if (!filtered.length) {
+
+            $("results").innerHTML =
+                "<div class='status'>No " +
+                (tab === "short" ? "Shorts" : "long-form videos") +
+                " found for that search. Try the other tab or a different search term.</div>";
+
+            status(
+                "No results found in this tab."
+            );
+
+            return;
+        }
+
+        if (tab === "short") {
+            renderYouTubeShorts(filtered);
+        }
+        else {
+            renderYouTubeSearch(filtered);
+        }
 
         status(
             "YouTube search results"
@@ -2806,58 +3056,30 @@ async function searchYouTube(query) {
 }
 
 
-function renderYouTubeSearch(items) {
-
-    const videos =
-        (items || [])
-            .filter(item => item?.id?.videoId);
-
-    if (!videos.length) {
-
-        $("results").innerHTML =
-            "<div class='status'>No results found.</div>";
-
-        return;
-    }
+function renderYouTubeSearch(videos) {
 
     let output =
         '<div class="grid">';
 
     for (
-        const item
+        const video
         of videos
     ) {
-
-        const videoId =
-            item.id.videoId;
-
-        const title =
-            item.snippet?.title ||
-            "Untitled video";
-
-        const channel =
-            item.snippet?.channelTitle ||
-            "";
-
-        const thumb =
-            item.snippet?.thumbnails?.medium?.url ||
-            item.snippet?.thumbnails?.default?.url ||
-            "";
 
         output += `
 
             <div
                 class="card"
-                onclick="playYouTubeVideo('${escapeHTML(videoId)}')"
+                onclick="playYouTubeVideo('${escapeHTML(video.id)}')"
             >
 
                 ${
-                    thumb
+                    video.thumb
 
                     ?
 
                     `<img
-                        src="${escapeHTML(thumb)}"
+                        src="${escapeHTML(video.thumb)}"
                         alt=""
                     >`
 
@@ -2873,11 +3095,66 @@ function renderYouTubeSearch(items) {
                 }
 
                 <div class="card-title">
-                    ${escapeHTML(title)}
+                    ${escapeHTML(video.title)}
                 </div>
 
                 <div class="card-subtitle">
-                    ${escapeHTML(channel)}
+                    ${escapeHTML(video.channel)}
+                </div>
+
+            </div>
+
+        `;
+
+    }
+
+    output +=
+        "</div>";
+
+    $("results").innerHTML =
+        output;
+}
+
+
+function renderYouTubeShorts(videos) {
+
+    let output =
+        '<div class="shorts-feed">';
+
+    for (
+        const video
+        of videos
+    ) {
+
+        output += `
+
+            <div
+                class="shorts-item"
+                onclick="playYouTubeVideo('${escapeHTML(video.id)}')"
+            >
+
+                ${
+                    video.thumb
+
+                    ?
+
+                    `<img
+                        src="${escapeHTML(video.thumb)}"
+                        alt=""
+                    >`
+
+                    :
+
+                    ""
+                }
+
+                <div class="shorts-caption">
+                    <div class="card-title">
+                        ${escapeHTML(video.title)}
+                    </div>
+                    <div class="card-subtitle">
+                        ${escapeHTML(video.channel)}
+                    </div>
                 </div>
 
             </div>
@@ -2906,6 +3183,9 @@ function playYouTubeVideo(id) {
         return;
     }
 
+    const isShort =
+        currentYoutubeTab === "short";
+
     $("heading").textContent =
         "YouTube Clone";
 
@@ -2915,8 +3195,8 @@ function playYouTubeVideo(id) {
             style="
                 position:relative;
                 width:100%;
-                max-width:900px;
-                aspect-ratio:16/9;
+                max-width:${isShort ? "360px" : "900px"};
+                aspect-ratio:${isShort ? "9/16" : "16/9"};
                 background:#000;
                 border-radius:8px;
                 overflow:hidden;
