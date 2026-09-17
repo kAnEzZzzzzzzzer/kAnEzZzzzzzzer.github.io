@@ -6,7 +6,7 @@
 <title>Spotify by Kane</title>
 
 <script>
-    
+/* Tab title protection. The title follows the lock state. */
 const APP_TITLE = "Spotify by Kane";
 const ERROR_TITLE = "Error 500";
 function enforceAppTitle() {
@@ -390,6 +390,9 @@ h2 {
     color: white;
     cursor: pointer;
     font-size: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .control-button:hover {
@@ -637,7 +640,7 @@ Code: ERR_APP_INIT_FAILED</div>
             onclick="previousTrack()"
             title="Previous"
         >
-            ⏮
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"/></svg>
         </button>
 
         <button
@@ -646,7 +649,7 @@ Code: ERR_APP_INIT_FAILED</div>
             onclick="togglePlayback()"
             title="Play/Pause"
         >
-            ▶
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
         </button>
 
         <button
@@ -654,7 +657,7 @@ Code: ERR_APP_INIT_FAILED</div>
             onclick="nextTrack()"
             title="Next"
         >
-            ⏭
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/></svg>
         </button>
 
     </div>
@@ -675,7 +678,16 @@ Code: ERR_APP_INIT_FAILED</div>
 
 
 
-
+/*
+ * PRIVATE LAUNCH HANDSHAKE
+ * ------------------------
+ * There is deliberately no localStorage/sessionStorage unlock flag.
+ * Refreshing the page always returns to the blank screen.
+ *
+ * This is intentionally obfuscated to make casual inspection harder.
+ * It is NOT a cryptographic access-control system: anything delivered
+ * to a browser can ultimately be inspected or modified by that browser.
+ */
 
 const _0xA = [117,110,108,111,99,107,95,120,55,51,49];
 const _0xB = [115,116,97,114,116,95,120,55,51,49];
@@ -725,7 +737,10 @@ let _0xUnlocked = false;
 let _0xOpenedAt = 0;
 let _0xStarting = false;
 
-
+/* Bookmarklet entry point.
+   The bookmarklet only dispatches a DOM event. This avoids relying on
+   dynamically-created window property names, which can be unreliable in
+   some local-file/browser contexts. */
 async function _0xReveal() {
     if (_0xUnlocked || _0xStarting) return true;
 
@@ -741,7 +756,7 @@ async function _0xReveal() {
         gate.remove();
     }
 
-   
+    // Load Spotify's Web Playback SDK only after the bookmarklet unlocks the page.
     if (!window.Spotify) {
         await new Promise(function(resolve) {
             const existing = document.querySelector('script[data-spotify-sdk="1"]');
@@ -777,7 +792,7 @@ async function _0xReveal() {
 const _0xSecretParts = ['SpDUo','eD1NK','qYlfj','zsLO-','biNYO','thrXe','C1AUY','R2hbs','4FK64','eJG'];
 
 function _0xGetSecret() {
- 
+    // Reassemble fragments at runtime. This works on local file:// pages too.
     return _0xSecretParts.map(function(x, i) {
         return (i & 1) ? x.split("").reverse().join("") : x;
     }).map(function(x, i, a) {
@@ -809,7 +824,7 @@ document.addEventListener("spotify-clone-unlock", function(e) {
     }
 });
 
-
+/* Automatic relock after 30 minutes, held only in RAM. */
 setInterval(function() {
     if (_0xUnlocked && _0xOpenedAt &&
         Date.now() - _0xOpenedAt > 30 * 60 * 1000) {
@@ -842,6 +857,7 @@ const REDIRECT_URI =
 const DJ_X_PLAYLIST_ID =
     "37i9dQZF1EYkqdzj48dyYq";
 
+/* Restricted (by HTTP referrer) to this site in Google Cloud Console. */
 const YOUTUBE_API_KEY =
     "AIzaSyAQvWxtwizelBJze8uJsYi4q4Bj7lcTUIw";
 
@@ -879,6 +895,12 @@ let currentSpotifyURL = "";
 function $(id) {
     return document.getElementById(id);
 }
+
+const PLAY_ICON_SVG =
+    '<svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>';
+
+const PAUSE_ICON_SVG =
+    '<svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>';
 
 function updateLoggedInNavigation() {
     document.querySelectorAll('.logged-in-nav').forEach(button => {
@@ -1337,10 +1359,10 @@ window.onSpotifyWebPlaybackSDKReady =
                         ? "block"
                         : "none";
 
-                $("playButton").textContent =
+                $("playButton").innerHTML =
                     state.paused
-                        ? "▶"
-                        : "⏸";
+                        ? PLAY_ICON_SVG
+                        : PAUSE_ICON_SVG;
 
                 status(
                     (state.paused ? "Paused: " : "Now playing: ") +
@@ -1932,7 +1954,11 @@ function renderSearch(data) {
 
             else if (type === "playlist") {
 
-             
+                /*
+                 * FIX:
+                 * Use item?.owner instead of assuming
+                 * owner always exists.
+                 */
 
                 const ownerName =
                     item?.owner?.display_name ||
@@ -2325,7 +2351,7 @@ function openAlbum(album) {
 }
 
 
-/* Artist */
+/* ARTIST */
 
 function openArtist(artist) {
 
@@ -2387,7 +2413,7 @@ function openArtist(artist) {
 }
 
 
-/* My playlists */
+/* MY PLAYLISTS */
 
 async function loadPlaylists() {
 
@@ -2504,7 +2530,7 @@ async function loadPlaylists() {
 }
 
 
-/* home */
+/* HOME */
 
 function home() {
 
@@ -2545,7 +2571,7 @@ function focusSearch() {
 }
 
 
-/* youtube w.i.p. */
+/* YOUTUBE */
 
 function extractYouTubeID(raw) {
 
@@ -2585,7 +2611,7 @@ function extractYouTubeID(raw) {
 
     }
     catch (e) {
-        
+        // Not a valid URL, fall through and report failure below.
     }
 
     return "";
@@ -2605,10 +2631,21 @@ function youtubeEmptyStateHTML() {
 }
 
 
-
+/* Switches the whole app from the Spotify look to the same shell, reskinned as YouTube. */
 function enterYouTubeMode() {
 
     currentMode = "youtube";
+
+    if (player) {
+
+        try {
+            player.pause();
+        }
+        catch (e) {
+            // ignore - nothing was playing or player wasn't ready
+        }
+
+    }
 
     $("sidebarLogo").textContent =
         "YouTube Clone";
@@ -2657,7 +2694,7 @@ function enterYouTubeMode() {
 }
 
 
-
+/* Switches back to the normal Spotify clone. */
 function enterSpotifyMode() {
 
     currentMode = "spotify";
@@ -2696,7 +2733,7 @@ function enterSpotifyMode() {
 }
 
 
-
+/* Search button now does different things depending on the current mode. */
 function handleSearchButton() {
 
     if (currentMode === "youtube") {
@@ -2939,7 +2976,7 @@ function playYouTubeVideo(id) {
 }
 
 
-/* Open spotify */
+/* OPEN SPOTIFY */
 
 function openSpotify() {
 
@@ -2970,7 +3007,7 @@ $("search").addEventListener(
 );
 
 
-/* start */
+/* START */
 
 async function startApp() {
     if (!_0xUnlocked) return;
@@ -3049,7 +3086,7 @@ async function startApp() {
 
 
 
-
+/* Always locked on a fresh page load. No persistent unlock state exists. */
 document.body.classList.add("password-locked");
 document.title = ERROR_TITLE;
 const _initialGate = document.getElementById("passwordGate");
