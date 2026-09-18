@@ -1047,7 +1047,9 @@ async function login() {
 
         });
 
-    window.location.href =
+    // Spotify's login page refuses to load inside an iframe, so this has
+    // to navigate the whole tab (window.top), not just this iframe.
+    window.top.location.href =
         url.toString();
 }
 
