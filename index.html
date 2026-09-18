@@ -110,6 +110,14 @@ function _0xReveal() {
 
     const frame = document.getElementById("appFrame");
     if (frame) {
+        // Marks this browser tab's session as unlocked. app.html checks
+        // for this so it can refuse to run if someone lands on it directly
+        // (e.g. typing/bookmarking its URL) instead of through this page.
+        try {
+            sessionStorage.setItem("_0xAppUnlocked", "1");
+        } catch (e) {
+        }
+
         // Cache-bust with a unique query string each time, so the browser
         // can't serve a stale cached copy of app.html after it's updated.
         frame.src = "app.html?v=" + Date.now();
