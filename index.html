@@ -99,6 +99,12 @@ function _0xReveal() {
 
     document.title = "Spotify by Kane";
 
+    // This stylesheet forces #bootGate to stay visible with !important,
+    // which otherwise beats a plain inline style.display = "none".
+    // Removing the whole <style> node is the reliable way to actually hide it.
+    const lockedStyle = document.getElementById("locked-error-style");
+    if (lockedStyle) lockedStyle.remove();
+
     const gate = document.getElementById("bootGate");
     if (gate) gate.style.display = "none";
 
@@ -111,18 +117,9 @@ function _0xReveal() {
 }
 
 function _0xRelock() {
-    _0xUnlocked = false;
-    _0xOpenedAt = 0;
-
-    const gate = document.getElementById("bootGate");
-    if (gate) gate.style.display = "block";
-
-    const frame = document.getElementById("appFrame");
-    if (frame) {
-        frame.style.display = "none";
-        frame.src = "about:blank";
-    }
-    document.title = "Error 500";
+    // A fresh load of this page is already locked by default, so a reload
+    // is the simplest and most reliable way to reset everything.
+    location.reload();
 }
 
 async function _0xTryUnlock(packet) {
