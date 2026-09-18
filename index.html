@@ -110,7 +110,9 @@ function _0xReveal() {
 
     const frame = document.getElementById("appFrame");
     if (frame) {
-        frame.src = "app.html";   // relative path — must sit next to this file
+        // Cache-bust with a unique query string each time, so the browser
+        // can't serve a stale cached copy of app.html after it's updated.
+        frame.src = "app.html?v=" + Date.now();
         frame.style.display = "block";
     }
     return true;
