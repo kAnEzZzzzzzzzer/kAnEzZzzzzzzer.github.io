@@ -839,12 +839,9 @@ const DJ_X_PLAYLIST_ID =
 const YOUTUBE_API_KEY =
     "AIzaSyAQvWxtwizelBJze8uJsYi4q4Bj7lcTUIw";
 
-/* Google Custom Search config */
-const GOOGLE_API_KEY =
-    "AIzaSyCnF9MMCfiOMWmlcmVZBfClTFUxCqZ5_aE";
-
-const GOOGLE_SEARCH_ENGINE_ID =
-    "f5424e2d56ad84a0e";
+/* Tavily Search API config (replaces Google Custom Search) */
+const TAVILY_API_KEY =
+    "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";
 
 const SCOPES =
     "user-read-private " +
@@ -2952,14 +2949,12 @@ function googleEmptyStateHTML() {
 async function searchGoogle(query) {
 
     if (
-        !GOOGLE_API_KEY ||
-        GOOGLE_API_KEY === "YOUR_GOOGLE_API_KEY_HERE" ||
-        !GOOGLE_SEARCH_ENGINE_ID ||
-        GOOGLE_SEARCH_ENGINE_ID === "YOUR_SEARCH_ENGINE_ID_HERE"
+        !TAVILY_API_KEY ||
+        TAVILY_API_KEY === "YOUR_TAVILY_API_KEY_HERE"
     ) {
 
         status(
-            "Google search isn't set up yet. Add your GOOGLE_API_KEY and GOOGLE_SEARCH_ENGINE_ID in the code.",
+            "Search isn't set up yet. Add your TAVILY_API_KEY in the code.",
             true
         );
 
@@ -2967,7 +2962,7 @@ async function searchGoogle(query) {
     }
 
     status(
-        "Searching Google..."
+        "Searching..."
     );
 
     $("heading").textContent =
@@ -2977,33 +2972,33 @@ async function searchGoogle(query) {
 
     try {
 
-        const params = {
+        const body = {
 
-            key:
-                GOOGLE_API_KEY,
-
-            cx:
-                GOOGLE_SEARCH_ENGINE_ID,
-
-            q:
+            query:
                 query,
 
-            safe:
-                safeSearchEnabled ? "active" : "off"
+            search_depth:
+                "basic",
+
+            max_results:
+                10,
+
+            include_images:
+                currentGoogleTab === "image"
 
         };
 
-        if (currentGoogleTab === "image") {
-
-            params.searchType =
-                "image";
-
-        }
-
         const response =
             await fetch(
-                "https://www.googleapis.com/customsearch/v1?" +
-                new URLSearchParams(params)
+                "https://api.tavily.com/search",
+                {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "Authorization": "Bearer " + TAVILY_API_KEY
+                    },
+                    body: JSON.stringify(body)
+                }
             );
 
         const data =
@@ -3012,23 +3007,42 @@ async function searchGoogle(query) {
         if (!response.ok) {
 
             throw new Error(
-                data.error?.message ||
-                "Google API error: " +
+                data.error ||
+                data.detail ||
+                "Tavily API error: " +
                 response.status
             );
         }
 
-        const items =
-            (data.items || [])
-                .filter(Boolean);
+        if (currentGoogleTab === "image") {
 
-        renderGoogleResults(items);
+            const images =
+                (data.images || [])
+                    .filter(Boolean);
 
-        status(
-            items.length
-                ? "Google search results"
-                : "No results found."
-        );
+            renderGoogleResults(images);
+
+            status(
+                images.length
+                    ? "Image results"
+                    : "No results found."
+            );
+
+        } else {
+
+            const items =
+                (data.results || [])
+                    .filter(Boolean);
+
+            renderGoogleResults(items);
+
+            status(
+                items.length
+                    ? "Search results"
+                    : "No results found."
+            );
+
+        }
 
     }
     catch (error) {
@@ -3068,16 +3082,22 @@ function renderGoogleResults(items) {
     ) {
 
         const link =
-            item.link || "#";
+            item.url || "#";
 
         const title =
             item.title || "Untitled";
 
         const snippet =
-            item.snippet || "";
+            item.content || "";
 
-        const displayLink =
-            item.displayLink || link;
+        let displayLink =
+            link;
+
+        try {
+            displayLink =
+                new URL(link).hostname;
+        } catch (e) {
+        }
 
         output += `
 
@@ -3130,18 +3150,21 @@ function renderGoogleImageResults(items) {
         of items
     ) {
 
+        // Tavily returns either plain URL strings or {url, description}
+        // objects depending on settings, so handle both.
+        const isPlainString =
+            typeof item === "string";
+
         const imgURL =
-            item.link ||
-            item.image?.thumbnailLink ||
-            "";
+            isPlainString
+                ? item
+                : (item.url || "");
 
         const pageURL =
-            item.image?.contextLink ||
-            item.link ||
-            "#";
+            imgURL || "#";
 
         const title =
-            item.title || "Image";
+            (!isPlainString && item.description) || "Image";
 
         output += `
 
