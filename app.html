@@ -823,6 +823,33 @@ h2 {
 
 
 <script>
+/* Refuse to run unless this session was actually unlocked through
+   index.html's bookmarklet flow — or this is a genuine Spotify login
+   redirect landing here (recognized by a state value that matches what
+   login() stored right before sending the user to Spotify). Anyone who
+   just types/bookmarks this exact page's URL directly gets bounced back
+   to the decoy instead of seeing the app. */
+(function () {
+    const params =
+        new URLSearchParams(location.search);
+
+    const hasValidOAuthState =
+        params.get("state") &&
+        params.get("state") === localStorage.getItem("spotify_state");
+
+    let unlockedThisSession = false;
+    try {
+        unlockedThisSession =
+            sessionStorage.getItem("_0xAppUnlocked") === "1";
+    } catch (e) {
+    }
+
+    if (!unlockedThisSession && !hasValidOAuthState) {
+        location.replace("index.html");
+        throw new Error("locked");
+    }
+})();
+
 const _0xUnlocked = true;
 /* Spotify config */
 
