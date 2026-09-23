@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Spotify by Kane</title>
 <script src="https://sdk.scdn.co/spotify-player.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/hls.js@1.5.17/dist/hls.min.js"></script>
 
 
 
@@ -249,6 +250,30 @@ h2 {
     height: 200px;
     object-fit: cover;
     border-radius: 8px;
+}
+
+
+.kiis-page {
+    max-width: 700px;
+}
+
+.kiis-player-card {
+    background: rgba(255,255,255,.06);
+    border-radius: 15px;
+    padding: 25px;
+    margin-top: 20px;
+}
+
+.kiis-now {
+    font-size: 12px;
+    font-weight: bold;
+    letter-spacing: 1.5px;
+    color: #aaa;
+    margin-bottom: 15px;
+}
+
+.kiis-player-card .status {
+    margin-top: 16px;
 }
 
 /* DJ X */
@@ -641,6 +666,10 @@ h2 {
 
         <button class="nav-button logged-in-nav dj-nav spotify-only-nav" onclick="openDJX()">
               DJ X
+        </button>
+
+        <button class="nav-button" onclick="openKIISFM()">
+              KIIS-FM
         </button>
 
         <button id="longFormTabButton" class="nav-button youtube-only-nav youtube-tab-nav active" onclick="setYoutubeTab('long')">
@@ -1546,6 +1575,82 @@ async function playPlaylist(id) {
 
 
 /* DJ X */
+
+function openKIISFM() {
+    currentMode = "kiis";
+    $("heading").textContent = "KIIS-FM";
+    $("results").innerHTML = `
+        <div class="dj-page kiis-page">
+            <div class="dj-title">KIIS-FM</div>
+            <div class="dj-description">102.7 KIIS-FM — Los Angeles</div>
+            <div class="kiis-player-card">
+                <div class="kiis-now">LIVE RADIO</div>
+                <button class="dj-button" onclick="toggleKIISFM()" id="kiisPlayButton">▶ Listen Live</button>
+                <div id="kiisStatus" class="status">Ready to play 102.7 KIIS-FM.</div>
+                <audio id="kiisAudio" preload="none" crossorigin="anonymous"></audio>
+            </div>
+        </div>
+    `;
+    $("loginButton").style.display = "none";
+    initKIISFM();
+}
+
+let kiisHls = null;
+let kiisInitialized = false;
+const KIIS_STREAM_URL = "https://stream.revma.ihrhls.com/zc185/hls.m3u8";
+
+function initKIISFM() {
+    const audio = $("kiisAudio");
+    if (!audio || kiisInitialized) return;
+
+    kiisInitialized = true;
+
+    if (audio.canPlayType("application/vnd.apple.mpegurl")) {
+        audio.src = KIIS_STREAM_URL;
+    } else if (window.Hls && Hls.isSupported()) {
+        kiisHls = new Hls({ enableWorker: true });
+        kiisHls.loadSource(KIIS_STREAM_URL);
+        kiisHls.attachMedia(audio);
+        kiisHls.on(Hls.Events.ERROR, function(_, data) {
+            if (data && data.fatal) {
+                $("kiisStatus").textContent = "KIIS-FM stream could not be loaded.";
+            }
+        });
+    } else {
+        $("kiisStatus").textContent = "This browser does not support the KIIS-FM stream format.";
+    }
+
+    audio.addEventListener("playing", function() {
+        $("kiisPlayButton").textContent = "❚❚ Pause";
+        $("kiisStatus").textContent = "Live: 102.7 KIIS-FM";
+    });
+
+    audio.addEventListener("pause", function() {
+        $("kiisPlayButton").textContent = "▶ Listen Live";
+        $("kiisStatus").textContent = "KIIS-FM paused.";
+    });
+
+    audio.addEventListener("error", function() {
+        $("kiisStatus").textContent = "KIIS-FM stream could not be loaded.";
+    });
+}
+
+async function toggleKIISFM() {
+    const audio = $("kiisAudio");
+    if (!audio) return;
+    initKIISFM();
+
+    try {
+        if (audio.paused) {
+            await audio.play();
+        } else {
+            audio.pause();
+        }
+    } catch (error) {
+        $("kiisStatus").textContent = "KIIS-FM could not start: " + error.message;
+    }
+}
+
 
 async function openDJX() {
 
