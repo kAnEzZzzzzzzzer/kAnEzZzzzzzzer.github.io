@@ -91,7 +91,7 @@ html, body { margin: 0; width: 100%; height: 100%; background: #0b0b0b; }
 <script>
 /* Only a SHA-256 hash of the password is stored here, never the
    password itself, so it can't be read back out of this file. */
-const EXPECTED_HASH = "REPLACE_WITH_YOUR_SHA256_HASH";
+const EXPECTED_HASH = "0e895c323cc786e17547125a4548680990d22ee9459561804dfc6f413d30618a";
 
 const LOCKOUT_KEY = "gateAttempts";
 const MAX_FREE_ATTEMPTS = 5;
@@ -164,7 +164,14 @@ async function tryUnlock() {
   const value = pwInput.value;
   if (!value) return;
 
-  const hash = await sha256Hex(value);
+  let hash;
+  try {
+    hash = await sha256Hex(value);
+  } catch (err) {
+    showMessage("This page needs to be loaded over https (crypto is unavailable on file:// or plain http).", "error");
+    return;
+  }
+
   if (hash === EXPECTED_HASH) {
     setAttempts({ count: 0, until: 0 });
     unlock();
