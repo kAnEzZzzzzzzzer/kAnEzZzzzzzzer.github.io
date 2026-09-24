@@ -2071,6 +2071,68 @@ function renderRadioPage() {
     filterRadio(radioQuery);
 }
 
+/* Current song: only stations that publish it can show it. */
+
+const RADIO_META = {
+    kexp: {
+        url: "https://api.kexp.org/v2/plays/?format=json&limit=1",
+        parse: d => { const p = d && d.results && d.results[0]; return p && p.play_type === "trackplay" && p.song ? { artist: p.artist, title: p.song } : null; }
+    },
+    groovesalad: {
+        url: "https://somafm.com/songs/groovesalad.json",
+        parse: d => { const s = d && d.songs && d.songs[0]; return s && s.title ? { artist: s.artist, title: s.title } : null; }
+    },
+    kcrw: {
+        url: "https://tracklist-api.kcrw.com/Music/all/1",
+        parse: d => { const s = Array.isArray(d) ? d[0] : null; return s && s.title ? { artist: s.artist, title: s.title } : null; }
+    },
+    radioparadise: {
+        url: "https://api.radioparadise.com/api/now_playing",
+        parse: d => d && d.title ? { artist: d.artist, title: d.title } : null
+    }
+};
+
+/* iHeart streams (KIIS-FM, MYFM, ...) : the number in .../zc185/... is the iHeart station id. */
+function iheartMeta(url) {
+    const m = /ihrhls\.com\/zc(\d+)/.exec(url || "");
+    return m ? {
+        url: "https://us.api.iheart.com/api/v3/live-meta/stream/" + m[1] + "/currentTrackMeta",
+        parse: d => d && d.title ? { artist: d.artist || "", title: d.title } : null
+    } : null;
+}
+
+let radioTrack = null;
+let radioMetaTimer = null;
+
+async function pollRadioMeta() {
+    const id = currentStationId;
+    const s = getStation(id);
+    if (!s) return;
+    const a = radioAttempt;
+    const src = RADIO_META[s.id] || iheartMeta((a && a.urls[a.i]) || s.url);
+    let track = null;
+    if (src) {
+        try {
+            const r = await fetch(src.url);
+            track = src.parse(await r.json());
+        } catch (e) {}
+    }
+    if (id !== currentStationId) return;
+    radioTrack = track;
+    updateRadioBar();
+}
+
+function startRadioMeta() {
+    stopRadioMeta();
+    pollRadioMeta();
+    radioMetaTimer = setInterval(pollRadioMeta, 15000);
+}
+
+function stopRadioMeta() {
+    clearInterval(radioMetaTimer);
+    radioMetaTimer = null;
+}
+
 function radioArtURI(s) {
     const size = s.tag.length > 6 ? 16 : 24;
     const svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs>' +
@@ -2090,10 +2152,13 @@ function updateRadioBar() {
         error: "Couldn't load this stream"
     };
     $("playerImage").src = s ? radioArtURI(s) : "";
-    $("playerTitle").textContent = s ? s.name : "Nothing playing";
-    $("playerArtist").textContent = s
-        ? (radioState === "playing" ? "Live · " + s.city : (sub[radioState] || s.city))
-        : "Choose a station";
+    const song = s && radioState === "playing" ? radioTrack : null;
+    $("playerTitle").textContent = song ? song.title : (s ? s.name : "Nothing playing");
+    $("playerArtist").textContent = song
+        ? (song.artist ? song.artist + " · " : "") + s.name
+        : (s
+            ? (radioState === "playing" ? "Live · " + s.city : (sub[radioState] || s.city))
+            : "Choose a station");
     $("playButton").innerHTML =
         (radioState === "playing" || radioState === "loading") ? PAUSE_ICON_SVG : PLAY_ICON_SVG;
 }
@@ -2216,6 +2281,8 @@ async function radioFailed() {
     }
 
     clearTimeout(radioTimer);
+    stopRadioMeta();
+    radioTrack = null;
     radioState = "error";
     syncRadio();
 }
@@ -2227,6 +2294,7 @@ function playStation(id) {
 
     if (currentStationId === id && (radioState === "playing" || radioState === "loading")) {
         clearTimeout(radioTimer);
+        stopRadioMeta();
         radioState = "paused";
         audio.pause();
         syncRadio();
@@ -2240,6 +2308,8 @@ function playStation(id) {
 
     currentStationId = id;
     radioState = "loading";
+    radioTrack = null;
+    stopRadioMeta();
     syncRadio();
 
     if (radioAttempt.i < 0) {
@@ -2253,6 +2323,8 @@ function stopRadio() {
     const audio = $("radioAudio");
     clearTimeout(radioTimer);
     if (radioHls) { radioHls.destroy(); radioHls = null; }
+    stopRadioMeta();
+    radioTrack = null;
     currentStationId = null;
     radioAttempt = null;
     radioState = "idle";
@@ -2269,13 +2341,14 @@ function stopRadio() {
         if (!currentStationId) return;
         clearTimeout(radioTimer);
         radioState = "playing";
+        if (!radioMetaTimer) startRadioMeta();
         syncRadio();
     });
     audio.addEventListener("waiting", () => {
         if (currentStationId && radioState === "playing") { radioState = "loading"; syncRadio(); }
     });
     audio.addEventListener("pause", () => {
-        if (currentStationId && radioState === "playing") { radioState = "paused"; syncRadio(); }
+        if (currentStationId && radioState === "playing") { radioState = "paused"; stopRadioMeta(); syncRadio(); }
     });
     audio.addEventListener("error", () => {
         if (currentStationId && radioState !== "paused") radioFailed();
