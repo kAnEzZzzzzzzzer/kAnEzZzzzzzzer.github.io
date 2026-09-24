@@ -333,6 +333,79 @@ h2 {
     color: white;
 }
 
+.search-button.radio-mode {
+    background: #a855f7;
+    color: white;
+}
+
+/* Radio */
+
+.nav-button.radio-only-nav {
+    display: none;
+}
+
+.radio-now {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    background: rgba(255,255,255,.07);
+    border-radius: 15px;
+    padding: 20px;
+    margin-bottom: 30px;
+}
+
+.radio-now .radio-art {
+    width: 110px;
+    flex-shrink: 0;
+}
+
+.radio-now .dj-button {
+    background: #a855f7;
+    color: white;
+    margin: 10px 0 0;
+}
+
+.radio-now .dj-button:hover {
+    background: #b76dfa;
+}
+
+.radio-now-title {
+    font-size: 26px;
+    font-weight: 800;
+    margin: 4px 0;
+}
+
+.radio-art {
+    position: relative;
+    aspect-ratio: 1;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 800;
+    font-size: 22px;
+    color: white;
+    text-shadow: 0 2px 8px rgba(0,0,0,.35);
+    text-align: center;
+    padding: 6px;
+}
+
+.radio-live {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    font-size: 10px;
+    letter-spacing: 1px;
+    background: rgba(0,0,0,.55);
+    border-radius: 10px;
+    padding: 3px 7px;
+}
+
+.card.playing {
+    outline: 2px solid #a855f7;
+    background: rgba(168,85,247,.18);
+}
+
 /* Google results */
 
 .google-result {
@@ -668,7 +741,7 @@ h2 {
               DJ X
         </button>
 
-        <button class="nav-button" onclick="openKIISFM()">
+        <button class="nav-button radio-only-nav" onclick="playStation('kiis')">
               KIIS-FM
         </button>
 
@@ -762,6 +835,15 @@ h2 {
                         <span class="mode-dropdown-check">✓</span>
                     </button>
 
+                    <button
+                        id="modeOptionRadio"
+                        class="mode-dropdown-item"
+                        onclick="selectMode('radio')"
+                    >
+                        <span>Radio</span>
+                        <span class="mode-dropdown-check">✓</span>
+                    </button>
+
                 </div>
 
             </div>
@@ -786,6 +868,8 @@ h2 {
 
 </div>
 
+
+<audio id="radioAudio" preload="none"></audio>
 
 <!-- Currently Playing Bar -->
 
@@ -935,6 +1019,10 @@ function updateLoggedInNavigation() {
 
     document.querySelectorAll('.google-only-nav').forEach(button => {
         button.style.display = currentMode === 'google' ? 'block' : 'none';
+    });
+
+    document.querySelectorAll('.radio-only-nav').forEach(button => {
+        button.style.display = currentMode === 'radio' ? 'block' : 'none';
     });
 }
 
@@ -1576,79 +1664,183 @@ async function playPlaylist(id) {
 
 /* DJ X */
 
-function openKIISFM() {
-    currentMode = "kiis";
-    $("heading").textContent = "KIIS-FM";
-    $("results").innerHTML = `
-        <div class="dj-page kiis-page">
-            <div class="dj-title">KIIS-FM</div>
-            <div class="dj-description">102.7 KIIS-FM — Los Angeles</div>
-            <div class="kiis-player-card">
-                <div class="kiis-now">LIVE RADIO</div>
-                <button class="dj-button" onclick="toggleKIISFM()" id="kiisPlayButton">▶ Listen Live</button>
-                <div id="kiisStatus" class="status">Ready to play 102.7 KIIS-FM.</div>
-                <audio id="kiisAudio" preload="none" crossorigin="anonymous"></audio>
-            </div>
-        </div>
-    `;
-    $("loginButton").style.display = "none";
-    initKIISFM();
+/* Radio */
+
+const RADIO_STATIONS = [
+    { id: "kiis", name: "102.7 KIIS-FM", tag: "KIIS", city: "Los Angeles", genre: "Top 40 Pop",
+      colors: ["#ff2e93", "#ff8a00"], url: "https://stream.revma.ihrhls.com/zc185/hls.m3u8" },
+    { id: "kroq", name: "KROQ 106.7", tag: "KROQ", city: "Los Angeles", genre: "Alternative Rock",
+      colors: ["#e11d48", "#7c1d3a"], url: "https://playerservices.streamtheworld.com/api/livestream-redirect/KROQFMAAC.aac" },
+    { id: "power106", name: "Power 106", tag: "P106", city: "Los Angeles", genre: "Hip-Hop",
+      colors: ["#f59e0b", "#b45309"], url: "https://playerservices.streamtheworld.com/api/livestream-redirect/KPWRFMAAC.aac" },
+    { id: "kcrw", name: "KCRW 89.9", tag: "KCRW", city: "Santa Monica", genre: "Eclectic Indie",
+      colors: ["#14b8a6", "#0f766e"], url: "https://kcrw.streamguys1.com/kcrw_192k_mp3_on_air_2" },
+    { id: "hot97", name: "HOT 97", tag: "HOT 97", city: "New York", genre: "Hip-Hop R&B",
+      colors: ["#ef4444", "#991b1b"], url: "https://playerservices.streamtheworld.com/api/livestream-redirect/WQHTFMAAC.aac" },
+    { id: "wnyc", name: "WNYC 93.9 FM", tag: "WNYC", city: "New York", genre: "News Talk",
+      colors: ["#3b82f6", "#1e3a8a"], url: "https://fm939.wnyc.org/wnycfm" },
+    { id: "kexp", name: "KEXP 90.3", tag: "KEXP", city: "Seattle", genre: "Indie Alternative",
+      colors: ["#eab308", "#854d0e"], url: "https://kexp.streamguys1.com/kexp160.aac" },
+    { id: "capital", name: "Capital FM", tag: "Capital", city: "London", genre: "Pop Hits",
+      colors: ["#ec4899", "#9d174d"], url: "https://media-ssl.musicradio.com/CapitalUK" },
+    { id: "nts1", name: "NTS Radio 1", tag: "NTS 1", city: "London", genre: "Electronic Eclectic",
+      colors: ["#71717a", "#27272a"], url: "https://stream-relay-geo.ntslive.net/stream" },
+    { id: "radioparadise", name: "Radio Paradise", tag: "RP", city: "California", genre: "Eclectic Rock",
+      colors: ["#22c55e", "#166534"], url: "https://stream.radioparadise.com/mp3-128" },
+    { id: "groovesalad", name: "SomaFM Groove Salad", tag: "Groove Salad", city: "San Francisco", genre: "Chill Downtempo",
+      colors: ["#84cc16", "#3f6212"], url: "https://ice1.somafm.com/groovesalad-128-mp3" },
+    { id: "chillhop", name: "Chillhop Radio", tag: "Chillhop", city: "Online", genre: "Lo-fi Chill",
+      colors: ["#8b5cf6", "#4c1d95"], url: "https://streams.fluxfm.de/Chillhop/mp3-320/streams.fluxfm.de/" }
+];
+
+let radioHls = null;
+let currentStationId = null;
+let radioState = "idle";
+let radioQuery = "";
+
+function radioArt(s, live) {
+    return `<div class="radio-art" style="background:linear-gradient(135deg,${s.colors[0]},${s.colors[1]})">
+        ${live ? '<span class="radio-live">● LIVE</span>' : ""}${escapeHTML(s.tag)}</div>`;
 }
 
-let kiisHls = null;
-let kiisInitialized = false;
-const KIIS_STREAM_URL = "https://stream.revma.ihrhls.com/zc185/hls.m3u8";
+function renderRadioPage() {
+    $("heading").textContent = "Radio";
+    $("results").innerHTML = '<div id="radioNow"></div><div id="radioGrid" class="grid"></div>';
+    syncRadio();
+    filterRadio(radioQuery);
+}
 
-function initKIISFM() {
-    const audio = $("kiisAudio");
-    if (!audio || kiisInitialized) return;
+function syncRadio() {
+    const now = $("radioNow");
+    if (!now) return;
+    const s = RADIO_STATIONS.find(x => x.id === currentStationId);
+    if (!s) {
+        now.innerHTML = `<div class="radio-now"><div>
+            <div class="kiis-now">LIVE RADIO</div>
+            <div class="dj-description" style="margin:0">Pick a station below to start listening.</div>
+        </div></div>`;
+    } else {
+        const text = { loading: "Connecting…", playing: "Live now", paused: "Paused", error: "Couldn't load this stream. Try another station." }[radioState] || "";
+        now.innerHTML = `<div class="radio-now">
+            ${radioArt(s, radioState === "playing")}
+            <div>
+                <div class="kiis-now">NOW PLAYING</div>
+                <div class="radio-now-title">${escapeHTML(s.name)}</div>
+                <div class="card-subtitle">${escapeHTML(s.city)} · ${escapeHTML(s.genre)}</div>
+                <div class="status" style="margin:6px 0 0">${text}</div>
+                <button class="dj-button" onclick="playStation('${s.id}')">
+                    ${radioState === "playing" || radioState === "loading" ? "❚❚ Pause" : "▶ Listen Live"}
+                </button>
+            </div></div>`;
+    }
+    renderRadioGrid();
+}
 
-    kiisInitialized = true;
+function filterRadio(query) {
+    radioQuery = (query || "").trim();
+    if (currentMode !== "radio" || !$("radioGrid")) return;
+    renderRadioGrid();
+    const n = radioMatches().length;
+    status(radioQuery
+        ? n + (n === 1 ? " station" : " stations") + ' matching "' + radioQuery + '"'
+        : "Search stations by name, city or genre.");
+}
 
-    if (audio.canPlayType("application/vnd.apple.mpegurl")) {
-        audio.src = KIIS_STREAM_URL;
-    } else if (window.Hls && Hls.isSupported()) {
-        kiisHls = new Hls({ enableWorker: true });
-        kiisHls.loadSource(KIIS_STREAM_URL);
-        kiisHls.attachMedia(audio);
-        kiisHls.on(Hls.Events.ERROR, function(_, data) {
-            if (data && data.fatal) {
-                $("kiisStatus").textContent = "KIIS-FM stream could not be loaded.";
-            }
+function radioMatches() {
+    const terms = radioQuery.toLowerCase().split(/\s+/).filter(Boolean);
+    return RADIO_STATIONS.filter(s => {
+        const hay = (s.name + " " + s.tag + " " + s.city + " " + s.genre).toLowerCase();
+        return terms.every(t => hay.includes(t));
+    });
+}
+
+function renderRadioGrid() {
+    const grid = $("radioGrid");
+    if (!grid) return;
+    const list = radioMatches();
+    grid.innerHTML = list.length ? list.map(s => {
+        const playing = s.id === currentStationId && radioState === "playing";
+        return `<div class="card${s.id === currentStationId ? " playing" : ""}" onclick="playStation('${s.id}')">
+            ${radioArt(s, playing)}
+            <div class="card-title">${escapeHTML(s.name)}</div>
+            <div class="card-subtitle">${escapeHTML(s.city)} · ${escapeHTML(s.genre)}</div>
+        </div>`;
+    }).join("") : "<div class='status'>No stations found. Try a different name, city or genre.</div>";
+}
+
+function playStation(id) {
+    const s = RADIO_STATIONS.find(x => x.id === id);
+    const audio = $("radioAudio");
+    if (!s || !audio) return;
+
+    if (currentStationId === id && radioState !== "error") {
+        if (audio.paused) audio.play().catch(() => {}); else audio.pause();
+        return;
+    }
+
+    if (radioHls) { radioHls.destroy(); radioHls = null; }
+    audio.pause();
+    currentStationId = id;
+    radioState = "loading";
+    syncRadio();
+
+    const isHls = s.url.includes(".m3u8");
+    if (isHls && !audio.canPlayType("application/vnd.apple.mpegurl") && window.Hls && Hls.isSupported()) {
+        radioHls = new Hls({ enableWorker: true });
+        radioHls.loadSource(s.url);
+        radioHls.attachMedia(audio);
+        radioHls.on(Hls.Events.ERROR, function(_, data) {
+            if (data && data.fatal) { radioState = "error"; syncRadio(); }
         });
     } else {
-        $("kiisStatus").textContent = "This browser does not support the KIIS-FM stream format.";
+        audio.src = s.url;
     }
-
-    audio.addEventListener("playing", function() {
-        $("kiisPlayButton").textContent = "❚❚ Pause";
-        $("kiisStatus").textContent = "Live: 102.7 KIIS-FM";
-    });
-
-    audio.addEventListener("pause", function() {
-        $("kiisPlayButton").textContent = "▶ Listen Live";
-        $("kiisStatus").textContent = "KIIS-FM paused.";
-    });
-
-    audio.addEventListener("error", function() {
-        $("kiisStatus").textContent = "KIIS-FM stream could not be loaded.";
-    });
+    audio.play().catch(() => {});
 }
 
-async function toggleKIISFM() {
-    const audio = $("kiisAudio");
-    if (!audio) return;
-    initKIISFM();
+function stopRadio() {
+    const audio = $("radioAudio");
+    if (radioHls) { radioHls.destroy(); radioHls = null; }
+    if (audio) { audio.pause(); audio.removeAttribute("src"); audio.load(); }
+    currentStationId = null;
+    radioState = "idle";
+}
 
-    try {
-        if (audio.paused) {
-            await audio.play();
-        } else {
-            audio.pause();
-        }
-    } catch (error) {
-        $("kiisStatus").textContent = "KIIS-FM could not start: " + error.message;
+(function() {
+    const audio = $("radioAudio");
+    const set = state => () => {
+        if (!currentStationId) return;
+        radioState = state;
+        syncRadio();
+    };
+    audio.addEventListener("playing", set("playing"));
+    audio.addEventListener("waiting", set("loading"));
+    audio.addEventListener("pause", set("paused"));
+    audio.addEventListener("error", set("error"));
+})();
+
+function enterRadioMode() {
+
+    currentMode = "radio";
+
+    if (player) {
+        try { player.pause(); } catch (e) {}
     }
+
+    radioQuery = "";
+    $("sidebarLogo").textContent = "Radio Clone";
+    $("search").placeholder = "Search radio stations";
+    $("search").value = "";
+    $("searchButton").textContent = "Search";
+    $("searchButton").classList.remove("youtube-mode", "google-mode");
+    $("searchButton").classList.add("radio-mode");
+    $("loginButton").style.display = "none";
+    document.querySelector(".player").style.display = "none";
+
+    updateModeDropdownUI();
+    updateLoggedInNavigation();
+    home();
+    $("search").focus();
 }
 
 
@@ -2625,6 +2817,13 @@ function home() {
 
     djMode = false;
 
+    if (currentMode === "radio") {
+
+        renderRadioPage();
+
+        return;
+    }
+
     if (currentMode === "youtube") {
 
         $("heading").textContent =
@@ -2796,7 +2995,8 @@ function updateModeDropdownUI() {
     const labels = {
         spotify: "Spotify",
         youtube: "YouTube",
-        google: "Google"
+        google: "Google",
+        radio: "Radio"
     };
 
     $("modeDropdownLabel").textContent =
@@ -2816,6 +3016,11 @@ function updateModeDropdownUI() {
         "active",
         currentMode === "google"
     );
+
+    $("modeOptionRadio").classList.toggle(
+        "active",
+        currentMode === "radio"
+    );
 }
 
 function selectMode(mode) {
@@ -2826,7 +3031,16 @@ function selectMode(mode) {
         return;
     }
 
-    if (mode === "youtube") {
+    if (currentMode === "radio") {
+        stopRadio();
+    }
+
+    $("searchButton").classList.remove("radio-mode");
+
+    if (mode === "radio") {
+        enterRadioMode();
+    }
+    else if (mode === "youtube") {
         enterYouTubeMode();
     }
     else if (mode === "google") {
@@ -3358,6 +3572,13 @@ function enterSpotifyMode() {
 /* Search button */
 function handleSearchButton() {
 
+    if (currentMode === "radio") {
+
+        filterRadio($("search").value);
+
+        return;
+    }
+
     if (currentMode === "google") {
 
         const raw =
@@ -3789,6 +4010,20 @@ function openSpotify() {
 
     }
 }
+
+
+/* Live radio filtering */
+
+$("search").addEventListener(
+    "input",
+    function() {
+
+        if (currentMode === "radio") {
+            filterRadio($("search").value);
+        }
+
+    }
+);
 
 
 /* Enter key */
