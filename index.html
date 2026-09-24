@@ -4,6 +4,30 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Spotify by Kane</title>
+<script>
+/* Only run on the official site. Anywhere else, show a message and stop. */
+(function() {
+    var ALLOWED_ORIGIN = "https://kanezzzzzzzzzer.github.io";
+    var ALLOWED_PATH = "/kAnEzZzzzzzzer.github.io/";
+
+    if (location.origin === ALLOWED_ORIGIN && location.pathname.indexOf(ALLOWED_PATH) === 0) {
+        return;
+    }
+
+    var url = ALLOWED_ORIGIN + ALLOWED_PATH;
+    document.open();
+    document.write(
+        '<!DOCTYPE html><html><head><meta charset="UTF-8">' +
+        '<meta name="viewport" content="width=device-width, initial-scale=1.0">' +
+        '<title>Spotify by Kane</title></head>' +
+        '<body style="margin:0;background:#000;color:#fff;font-family:Arial,Helvetica,sans-serif;' +
+        'display:flex;align-items:center;justify-content:center;min-height:100vh;text-align:center;padding:20px;">' +
+        '<div><div style="font-size:22px;font-weight:bold;margin-bottom:12px;">This page only works on its official site</div>' +
+        '<a href="' + url + '" style="color:#1ed760;">' + url + '</a></div></body></html>'
+    );
+    document.close();
+})();
+</script>
 <script src="https://sdk.scdn.co/spotify-player.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/hls.js@1.5.17/dist/hls.min.js"></script>
 
@@ -852,7 +876,7 @@ h2 {
 
 <body>
 
-<div class="version-tag">v1.0</div>
+<div class="version-tag">v2.4</div>
 
 <div class="app">
 
