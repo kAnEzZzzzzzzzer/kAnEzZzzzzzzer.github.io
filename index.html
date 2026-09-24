@@ -406,6 +406,129 @@ h2 {
     background: rgba(168,85,247,.18);
 }
 
+.card {
+    position: relative;
+}
+
+.radio-add-button {
+    display: none;
+    width: 44px;
+    height: 44px;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    border-radius: 50%;
+    background: #a855f7;
+    color: white;
+    font-size: 26px;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.radio-add-button:hover {
+    background: #b76dfa;
+}
+
+.radio-remove {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    width: 26px;
+    height: 26px;
+    border: none;
+    border-radius: 50%;
+    background: rgba(0,0,0,.65);
+    color: white;
+    font-size: 12px;
+    cursor: pointer;
+    z-index: 2;
+}
+
+.radio-remove:hover {
+    background: #e11d48;
+}
+
+.modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    background: rgba(0,0,0,.7);
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+}
+
+.modal-overlay.open {
+    display: flex;
+}
+
+.modal {
+    width: 100%;
+    max-width: 440px;
+    background: #282828;
+    border-radius: 14px;
+    padding: 26px;
+}
+
+.modal h2 {
+    margin: 0 0 18px;
+}
+
+.modal label {
+    display: block;
+    font-size: 13px;
+    color: #bbb;
+    margin: 12px 0 5px;
+}
+
+.modal input {
+    width: 100%;
+    padding: 12px 14px;
+    border: 1px solid #444;
+    border-radius: 8px;
+    background: #121212;
+    color: white;
+    font-size: 15px;
+    outline: none;
+}
+
+.modal input:focus {
+    border-color: #a855f7;
+}
+
+.modal-hint {
+    font-size: 12px;
+    color: #888;
+    margin-top: 6px;
+}
+
+.modal-error {
+    color: #ff8888;
+    font-size: 13px;
+    min-height: 18px;
+    margin-top: 12px;
+}
+
+.modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.modal-actions .dj-button {
+    background: #a855f7;
+    color: white;
+    margin: 0;
+}
+
+.modal-actions .dj-skip {
+    background: transparent;
+    border: 1px solid #777;
+}
+
 /* Google results */
 
 .google-result {
@@ -783,6 +906,13 @@ h2 {
             </button>
 
             <button
+                id="radioAddButton"
+                class="radio-add-button"
+                onclick="openAddStation()"
+                title="Add a radio station"
+            >+</button>
+
+            <button
                 id="loginButton"
                 class="login-button"
                 onclick="login()"
@@ -864,6 +994,32 @@ h2 {
 
 </div>
 
+
+<div id="addModal" class="modal-overlay" onclick="if(event.target===this)closeAddStation()">
+    <div class="modal">
+        <h2>Add a radio station</h2>
+
+        <label for="addName">Station name</label>
+        <input id="addName" placeholder="e.g. My Favorite FM" autocomplete="off">
+
+        <label for="addUrl">Stream URL</label>
+        <input id="addUrl" placeholder="https://example.com/stream.mp3" autocomplete="off">
+        <div class="modal-hint">Use a direct stream link (.mp3, .aac or .m3u8). Playlist files like .pls or .m3u won't work.</div>
+
+        <label for="addCity">City (optional)</label>
+        <input id="addCity" placeholder="e.g. Chicago" autocomplete="off">
+
+        <label for="addGenre">Genre (optional)</label>
+        <input id="addGenre" placeholder="e.g. Jazz" autocomplete="off">
+
+        <div id="addError" class="modal-error"></div>
+
+        <div class="modal-actions">
+            <button class="dj-button dj-skip" onclick="closeAddStation()">Cancel</button>
+            <button class="dj-button" onclick="saveNewStation()">Save station</button>
+        </div>
+    </div>
+</div>
 
 <audio id="radioAudio" preload="none"></audio>
 
@@ -1016,6 +1172,8 @@ function updateLoggedInNavigation() {
     document.querySelectorAll('.google-only-nav').forEach(button => {
         button.style.display = currentMode === 'google' ? 'block' : 'none';
     });
+
+    $("radioAddButton").style.display = currentMode === 'radio' ? 'flex' : 'none';
 
     document.querySelectorAll('.radio-only-nav').forEach(button => {
         button.style.display = currentMode === 'radio' ? 'block' : 'none';
@@ -1723,8 +1881,102 @@ let radioOnlineMsg = "";
 let radioSearchTimer = null;
 let radioSearchToken = 0;
 
+/* Custom stations (saved in localStorage) */
+
+const CUSTOM_KEY = "radio_custom_stations";
+
+let customStations = [];
+
+try {
+    customStations = JSON.parse(localStorage.getItem(CUSTOM_KEY) || "[]")
+        .filter(s => s && s.id && s.url && s.colors);
+} catch (e) {
+    customStations = [];
+}
+
+function saveCustomStations() {
+    try {
+        localStorage.setItem(CUSTOM_KEY, JSON.stringify(customStations));
+    } catch (e) {}
+}
+
+function allStations() {
+    return [...customStations, ...RADIO_STATIONS];
+}
+
+function removeBtn(s) {
+    return s.custom
+        ? `<button class="radio-remove" title="Remove station" onclick="event.stopPropagation(); removeStation('${escapeHTML(s.id)}')">✕</button>`
+        : "";
+}
+
+function openAddStation() {
+    ["addName", "addUrl", "addCity", "addGenre"].forEach(id => { $(id).value = ""; });
+    $("addError").textContent = "";
+    $("addModal").classList.add("open");
+    $("addName").focus();
+}
+
+function closeAddStation() {
+    $("addModal").classList.remove("open");
+}
+
+function saveNewStation() {
+    const name = $("addName").value.trim();
+    const url = $("addUrl").value.trim();
+    const fail = msg => { $("addError").textContent = msg; };
+
+    if (!name) return fail("Give the station a name.");
+
+    let valid = false;
+    try {
+        const u = new URL(url);
+        valid = u.protocol === "https:" || (u.protocol === "http:" && location.protocol !== "https:");
+    } catch (e) {}
+    if (!valid) return fail("Enter a valid stream URL starting with https://");
+
+    let h = 0;
+    for (const c of name) h = (h * 31 + c.charCodeAt(0)) >>> 0;
+    const hue = h % 360;
+
+    customStations.unshift({
+        id: "custom_" + Date.now(),
+        custom: true,
+        name: name,
+        tag: name.split(/\s+/).slice(0, 2).join(" ").slice(0, 14),
+        city: $("addCity").value.trim() || "My stations",
+        genre: $("addGenre").value.trim() || "Custom",
+        colors: ["hsl(" + hue + ",65%,45%)", "hsl(" + ((hue + 40) % 360) + ",65%,24%)"],
+        url: url
+    });
+    saveCustomStations();
+    closeAddStation();
+
+    $("search").value = "";
+    radioQuery = "";
+    renderRadioPage();
+    status('Added "' + name + '".');
+}
+
+function removeStation(id) {
+    const s = customStations.find(x => x.id === id);
+    if (!s || !confirm('Remove "' + s.name + '"?')) return;
+    if (currentStationId === id) stopRadio();
+    customStations = customStations.filter(x => x.id !== id);
+    saveCustomStations();
+    syncRadio();
+}
+
+document.addEventListener("keydown", function(event) {
+    if (!$("addModal").classList.contains("open")) return;
+    if (event.key === "Escape") closeAddStation();
+    if (event.key === "Enter") saveNewStation();
+});
+
 function getStation(id) {
-    return RADIO_STATIONS.find(x => x.id === id) || radioExtra[id];
+    return RADIO_STATIONS.find(x => x.id === id)
+        || customStations.find(x => x.id === id)
+        || radioExtra[id];
 }
 
 async function rbFetch(path) {
@@ -1791,6 +2043,7 @@ function radioArt(s, live) {
 function stationCard(s) {
     const playing = s.id === currentStationId && radioState === "playing";
     return `<div class="card${s.id === currentStationId ? " playing" : ""}" onclick="playStation('${escapeHTML(s.id)}')">
+        ${removeBtn(s)}
         ${radioArt(s, playing)}
         <div class="card-title">${escapeHTML(s.name)}</div>
         <div class="card-subtitle">${escapeHTML(s.city)} · ${escapeHTML(s.genre)}</div>
@@ -1833,7 +2086,7 @@ function syncRadio() {
 
 function radioMatches() {
     const terms = radioQuery.toLowerCase().split(/\s+/).filter(Boolean);
-    return RADIO_STATIONS.filter(s => {
+    return allStations().filter(s => {
         const hay = (s.name + " " + s.tag + " " + s.city + " " + s.genre).toLowerCase();
         return terms.every(t => hay.includes(t));
     });
@@ -1918,7 +2171,7 @@ async function radioFailed() {
         return;
     }
 
-    if (!a.lookedUp) {
+    if (!a.lookedUp && !s.custom) {
         a.lookedUp = true;
         a.looking = true;
         const urls = await rbLookup(RADIO_LOOKUP[s.id] || s.name);
