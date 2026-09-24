@@ -741,10 +741,6 @@ h2 {
               DJ X
         </button>
 
-        <button class="nav-button radio-only-nav" onclick="playStation('kiis')">
-              KIIS-FM
-        </button>
-
         <button id="longFormTabButton" class="nav-button youtube-only-nav youtube-tab-nav active" onclick="setYoutubeTab('long')">
               Long Form
         </button>
@@ -1693,19 +1689,117 @@ const RADIO_STATIONS = [
       colors: ["#8b5cf6", "#4c1d95"], url: "https://streams.fluxfm.de/Chillhop/mp3-320/streams.fluxfm.de/" }
 ];
 
+/* Backup lookups: if a built-in stream fails, we search the free
+   radio-browser.info directory for a working stream of the same station. */
+
+const RADIO_LOOKUP = {
+    kiis: "KIIS", kroq: "KROQ", power106: "Power 106", kcrw: "KCRW",
+    hot97: "HOT 97", wnyc: "WNYC", kexp: "KEXP", capital: "Capital FM",
+    nts1: "NTS Radio", radioparadise: "Radio Paradise",
+    groovesalad: "Groove Salad", chillhop: "Chillhop"
+};
+
+const RADIO_ALT = {
+    groovesalad: ["https://ice2.somafm.com/groovesalad-128-mp3", "https://ice4.somafm.com/groovesalad-128-mp3"],
+    radioparadise: ["https://stream.radioparadise.com/aac-128"],
+    kexp: ["https://kexp.streamguys1.com/kexp128.mp3"]
+};
+
+const RB_SERVERS = [
+    "https://de1.api.radio-browser.info",
+    "https://at1.api.radio-browser.info",
+    "https://nl1.api.radio-browser.info"
+];
+
 let radioHls = null;
 let currentStationId = null;
 let radioState = "idle";
 let radioQuery = "";
+let radioAttempt = null;
+let radioTimer = null;
+let radioExtra = {};
+let radioOnline = [];
+let radioOnlineMsg = "";
+let radioSearchTimer = null;
+let radioSearchToken = 0;
+
+function getStation(id) {
+    return RADIO_STATIONS.find(x => x.id === id) || radioExtra[id];
+}
+
+async function rbFetch(path) {
+    for (const base of RB_SERVERS) {
+        try {
+            const r = await fetch(base + path);
+            if (r.ok) return await r.json();
+        } catch (e) {}
+    }
+    return [];
+}
+
+function rbParams(o) {
+    return new URLSearchParams({ ...o, hidebroken: "true", order: "clickcount", reverse: "true" });
+}
+
+async function rbLookup(term) {
+    const rows = await rbFetch("/json/stations/search?" + rbParams({ name: term, limit: "15" }));
+    return rows.map(r => r.url_resolved || "").filter(u => u.startsWith("https://"));
+}
+
+function rbToStation(r) {
+    const url = r.url_resolved || "";
+    if (!url.startsWith("https://") || !r.stationuuid) return null;
+    let h = 0;
+    for (const c of r.stationuuid) h = (h * 31 + c.charCodeAt(0)) >>> 0;
+    const hue = h % 360;
+    const name = (r.name || "Unknown station").trim();
+    return {
+        id: "rb_" + r.stationuuid,
+        name: name,
+        tag: name.split(/\s+/).slice(0, 2).join(" ").slice(0, 14),
+        city: r.state || r.country || "Online",
+        genre: (r.tags || "").split(",").filter(Boolean).slice(0, 2).join(", ") || "Radio",
+        colors: ["hsl(" + hue + ",65%,45%)", "hsl(" + ((hue + 40) % 360) + ",65%,24%)"],
+        url: url
+    };
+}
+
+async function searchRadioOnline(q, token) {
+    const [a, b] = await Promise.all([
+        rbFetch("/json/stations/search?" + rbParams({ name: q, limit: "24" })),
+        rbFetch("/json/stations/search?" + rbParams({ tag: q, limit: "24" }))
+    ]);
+    if (token !== radioSearchToken) return;
+    const seen = new Set();
+    const list = [];
+    for (const r of [...a, ...b]) {
+        if (seen.has(r.stationuuid)) continue;
+        seen.add(r.stationuuid);
+        const s = rbToStation(r);
+        if (s) { radioExtra[s.id] = s; list.push(s); }
+    }
+    radioOnline = list.slice(0, 24);
+    radioOnlineMsg = list.length ? "" : "No online stations found (or the station directory couldn't be reached).";
+    renderRadioOnline();
+}
 
 function radioArt(s, live) {
     return `<div class="radio-art" style="background:linear-gradient(135deg,${s.colors[0]},${s.colors[1]})">
         ${live ? '<span class="radio-live">● LIVE</span>' : ""}${escapeHTML(s.tag)}</div>`;
 }
 
+function stationCard(s) {
+    const playing = s.id === currentStationId && radioState === "playing";
+    return `<div class="card${s.id === currentStationId ? " playing" : ""}" onclick="playStation('${escapeHTML(s.id)}')">
+        ${radioArt(s, playing)}
+        <div class="card-title">${escapeHTML(s.name)}</div>
+        <div class="card-subtitle">${escapeHTML(s.city)} · ${escapeHTML(s.genre)}</div>
+    </div>`;
+}
+
 function renderRadioPage() {
     $("heading").textContent = "Radio";
-    $("results").innerHTML = '<div id="radioNow"></div><div id="radioGrid" class="grid"></div>';
+    $("results").innerHTML = '<div id="radioNow"></div><div id="radioGrid" class="grid"></div><div id="radioOnline"></div>';
     syncRadio();
     filterRadio(radioQuery);
 }
@@ -1713,7 +1807,7 @@ function renderRadioPage() {
 function syncRadio() {
     const now = $("radioNow");
     if (!now) return;
-    const s = RADIO_STATIONS.find(x => x.id === currentStationId);
+    const s = getStation(currentStationId);
     if (!s) {
         now.innerHTML = `<div class="radio-now"><div>
             <div class="kiis-now">LIVE RADIO</div>
@@ -1728,22 +1822,13 @@ function syncRadio() {
                 <div class="radio-now-title">${escapeHTML(s.name)}</div>
                 <div class="card-subtitle">${escapeHTML(s.city)} · ${escapeHTML(s.genre)}</div>
                 <div class="status" style="margin:6px 0 0">${text}</div>
-                <button class="dj-button" onclick="playStation('${s.id}')">
+                <button class="dj-button" onclick="playStation('${escapeHTML(s.id)}')">
                     ${radioState === "playing" || radioState === "loading" ? "❚❚ Pause" : "▶ Listen Live"}
                 </button>
             </div></div>`;
     }
     renderRadioGrid();
-}
-
-function filterRadio(query) {
-    radioQuery = (query || "").trim();
-    if (currentMode !== "radio" || !$("radioGrid")) return;
-    renderRadioGrid();
-    const n = radioMatches().length;
-    status(radioQuery
-        ? n + (n === 1 ? " station" : " stations") + ' matching "' + radioQuery + '"'
-        : "Search stations by name, city or genre.");
+    renderRadioOnline();
 }
 
 function radioMatches() {
@@ -1758,65 +1843,151 @@ function renderRadioGrid() {
     const grid = $("radioGrid");
     if (!grid) return;
     const list = radioMatches();
-    grid.innerHTML = list.length ? list.map(s => {
-        const playing = s.id === currentStationId && radioState === "playing";
-        return `<div class="card${s.id === currentStationId ? " playing" : ""}" onclick="playStation('${s.id}')">
-            ${radioArt(s, playing)}
-            <div class="card-title">${escapeHTML(s.name)}</div>
-            <div class="card-subtitle">${escapeHTML(s.city)} · ${escapeHTML(s.genre)}</div>
-        </div>`;
-    }).join("") : "<div class='status'>No stations found. Try a different name, city or genre.</div>";
+    grid.innerHTML = list.length
+        ? list.map(stationCard).join("")
+        : (radioQuery ? "" : "<div class='status'>No stations.</div>");
 }
 
-function playStation(id) {
-    const s = RADIO_STATIONS.find(x => x.id === id);
-    const audio = $("radioAudio");
-    if (!s || !audio) return;
+function renderRadioOnline() {
+    const box = $("radioOnline");
+    if (!box) return;
+    if (!radioQuery) { box.innerHTML = ""; return; }
+    box.innerHTML = "<h2>More stations online</h2>" + (radioOnline.length
+        ? '<div class="grid">' + radioOnline.map(stationCard).join("") + "</div>"
+        : '<div class="status">' + escapeHTML(radioOnlineMsg) + "</div>");
+}
 
-    if (currentStationId === id && radioState !== "error") {
-        if (audio.paused) audio.play().catch(() => {}); else audio.pause();
+function filterRadio(query) {
+    radioQuery = (query || "").trim();
+    if (currentMode !== "radio" || !$("radioGrid")) return;
+    renderRadioGrid();
+
+    clearTimeout(radioSearchTimer);
+    const token = ++radioSearchToken;
+    radioOnline = [];
+
+    if (radioQuery.length < 2) {
+        radioOnlineMsg = "";
+        renderRadioOnline();
+        status("Search by name, city or genre. Online results cover stations worldwide.");
         return;
     }
 
+    radioOnlineMsg = "Searching online stations…";
+    renderRadioOnline();
+    status('Results for "' + radioQuery + '"');
+    radioSearchTimer = setTimeout(() => searchRadioOnline(radioQuery, token), 400);
+}
+
+function loadSource(s) {
+    const audio = $("radioAudio");
+    const a = radioAttempt;
+    const i = a.i;
+    const url = a.urls[i];
+
     if (radioHls) { radioHls.destroy(); radioHls = null; }
-    audio.pause();
+
+    if (url.includes(".m3u8") && !audio.canPlayType("application/vnd.apple.mpegurl") && window.Hls && Hls.isSupported()) {
+        const h = new Hls({ enableWorker: true });
+        radioHls = h;
+        h.loadSource(url);
+        h.attachMedia(audio);
+        h.on(Hls.Events.ERROR, function(_, data) {
+            if (radioHls === h && data && data.fatal) radioFailed();
+        });
+    } else {
+        audio.src = url;
+    }
+
+    audio.play().catch(() => {});
+
+    clearTimeout(radioTimer);
+    radioTimer = setTimeout(() => {
+        if (radioState === "loading" && radioAttempt === a && a.i === i) radioFailed();
+    }, 12000);
+}
+
+async function radioFailed() {
+    const s = getStation(currentStationId);
+    const a = radioAttempt;
+    if (!s || !a || a.looking) return;
+
+    if (a.i + 1 < a.urls.length) {
+        a.i++;
+        loadSource(s);
+        return;
+    }
+
+    if (!a.lookedUp) {
+        a.lookedUp = true;
+        a.looking = true;
+        const urls = await rbLookup(RADIO_LOOKUP[s.id] || s.name);
+        a.looking = false;
+        if (radioAttempt !== a) return;
+        const fresh = urls.filter(u => !a.urls.includes(u)).slice(0, 4);
+        if (fresh.length) {
+            a.urls.push(...fresh);
+            a.i++;
+            loadSource(s);
+            return;
+        }
+    }
+
+    clearTimeout(radioTimer);
+    radioState = "error";
+    syncRadio();
+}
+
+function playStation(id) {
+    const s = getStation(id);
+    const audio = $("radioAudio");
+    if (!s || !audio) return;
+
+    if (currentStationId === id && (radioState === "playing" || radioState === "loading")) {
+        clearTimeout(radioTimer);
+        radioState = "paused";
+        audio.pause();
+        syncRadio();
+        return;
+    }
+
+    if (currentStationId !== id || !radioAttempt) {
+        radioAttempt = { urls: [s.url, ...(RADIO_ALT[s.id] || [])], i: 0, lookedUp: false, looking: false };
+    }
+
     currentStationId = id;
     radioState = "loading";
     syncRadio();
-
-    const isHls = s.url.includes(".m3u8");
-    if (isHls && !audio.canPlayType("application/vnd.apple.mpegurl") && window.Hls && Hls.isSupported()) {
-        radioHls = new Hls({ enableWorker: true });
-        radioHls.loadSource(s.url);
-        radioHls.attachMedia(audio);
-        radioHls.on(Hls.Events.ERROR, function(_, data) {
-            if (data && data.fatal) { radioState = "error"; syncRadio(); }
-        });
-    } else {
-        audio.src = s.url;
-    }
-    audio.play().catch(() => {});
+    loadSource(s);
 }
 
 function stopRadio() {
     const audio = $("radioAudio");
+    clearTimeout(radioTimer);
     if (radioHls) { radioHls.destroy(); radioHls = null; }
-    if (audio) { audio.pause(); audio.removeAttribute("src"); audio.load(); }
     currentStationId = null;
+    radioAttempt = null;
     radioState = "idle";
+    if (audio) { audio.pause(); audio.removeAttribute("src"); audio.load(); }
 }
 
 (function() {
     const audio = $("radioAudio");
-    const set = state => () => {
+    audio.addEventListener("playing", () => {
         if (!currentStationId) return;
-        radioState = state;
+        clearTimeout(radioTimer);
+        radioState = "playing";
         syncRadio();
-    };
-    audio.addEventListener("playing", set("playing"));
-    audio.addEventListener("waiting", set("loading"));
-    audio.addEventListener("pause", set("paused"));
-    audio.addEventListener("error", set("error"));
+    });
+    audio.addEventListener("waiting", () => {
+        if (currentStationId && radioState === "playing") { radioState = "loading"; syncRadio(); }
+    });
+    audio.addEventListener("pause", () => {
+        if (currentStationId && radioState === "playing") { radioState = "paused"; syncRadio(); }
+    });
+    audio.addEventListener("error", () => {
+        if (currentStationId && radioState !== "paused") radioFailed();
+    });
 })();
 
 function enterRadioMode() {
